@@ -1,4 +1,3 @@
-import sys
 import os
 import importlib
 import logging
@@ -50,12 +49,7 @@ class Conf(dict):
         self.basedir = basedir
         self.clear()
 
-        try:
-            conf_module = importlib.import_module(settings_file)
-        except ImportError:
-            logger.exception(['Error importing settings module {}'.format(
-                settings_file)])
-            sys.exit(-1)
+        conf_module = importlib.import_module(settings_file)
 
         for key, value in conf_module.__dict__.items():
             if not key.startswith('_'):

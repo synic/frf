@@ -6,6 +6,11 @@ from frf import conf
 
 
 class TestCase(unittest.TestCase):
+    def setUp(self):
+        super().setUp()
+
+        conf.init('frf.tests.fakeproject.settings')
+
     def test_timezone_now(self):
         n = timezone.now()
 

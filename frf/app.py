@@ -81,8 +81,6 @@ def init(project_name, settings_file, base_dir, main_module=None):
     if not main_module:
         main_module = project_name
 
-    import_class(main_module)
-
     # conf object setup
     conf.init(settings_file, base_dir)
     conf['PROJECT_NAME'] = project_name
