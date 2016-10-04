@@ -1,0 +1,77 @@
+#!/usr/bin/env python
+
+import uuid
+import os
+import argparse
+import jinja2
+import frf
+
+from frf.utils.cli.colors import ColorText
+
+try:
+    import pyfiglet
+except ImportError:
+    pyfiglet = None
+
+basedir = os.path.abspath(os.path.dirname(frf.__file__))
+skeldir = os.path.join(basedir, 'skel')
+
+parser = argparse.ArgumentParser(description='Start FRF project')
+parser.add_argument('-o', '--output', dest='output_dir', default='.',
+                    help='Directory where you would like to create the'
+                    'project. Default is the currenct directory')
+parser.add_argument('-n', '--name', dest='name', default=None,
+                    help='Project name.  If not specified, the basename of '
+                    'the output directory will be used.')
+
+
+def touch(fname, times=None):
+    with open(fname, 'a'):
+        os.utime(fname, times)
+
+
+def copy_skel(template_name, path, **kwargs):
+    with open(os.path.join(skeldir, template_name)) as h:
+        t = jinja2.Template(h.read())
+
+    with open(path, 'w') as out:
+        out.write(t.render(**kwargs))
+
+
+def create_project_skeleton(output_dir, project_name):
+    main_dir = os.path.join(output_dir, project_name)
+
+    if pyfiglet:
+        figlet = pyfiglet.Figlet(font='slant')
+        text = figlet.renderText('FRF')
+    else:
+        text = 'FRF\n'
+
+    col = ColorText()
+
+    print(col.lightmagenta(text).value(), end='')  # noqa
+    print('~' * 70)
+
+    print('Creating main directory...', end='')
+    if not os.path.exists(main_dir):
+        os.mkdir(main_dir)
+    print('Done.')
+    copy_skel('main_init_py', os.path.join(main_dir, '__init__.py'),
+              project_name=name)
+    copy_skel('settings_py', os.path.join(main_dir, 'settings.py'),
+              secret_key=str(uuid.uuid4()), project_name=name,
+              output_dir=output_dir)
+    copy_skel('manage_py', os.path.join(output_dir, 'manage.py'),
+              project_name=name)
+    copy_skel('routes_py', os.path.join(main_dir, 'routes.py'))
+
+
+if __name__ == '__main__':
+    args = parser.parse_args()
+    output_dir = args.output_dir
+    name = args.name
+
+    if not name:
+        name = os.path.basename(os.path.abspath(output_dir))
+
+    create_project_skeleton(output_dir, name)

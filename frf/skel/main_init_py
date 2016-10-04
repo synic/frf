@@ -1,0 +1,9 @@
+import os
+
+from frf import app, conf, db, cache  # noqa
+
+settingsfile = os.getenv('FALCON_SETTINGS_FILE', '{{ project_name }}.settings')
+basedir = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
+
+#: initialize the application
+app.init("{{ project_name }}", settingsfile, basedir)

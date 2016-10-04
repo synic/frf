@@ -1,0 +1,3 @@
+from frf.routes import include, route  # noqa
+
+routes = []

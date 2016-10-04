@@ -1,0 +1,12 @@
+*.pyc
+schema.architect~
+.dir-locals.el
+docker/citus/.out.sql
+.cache
+.coverage
+*client_secrets.json
+TAGS
+_build
+_static
+_templates
+build/

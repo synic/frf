@@ -1,0 +1,6 @@
+#!/usr/bin/env python
+
+import {{ project_name }}  # noqa
+
+from frf import manage
+manage.main()

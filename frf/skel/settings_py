@@ -1,0 +1,20 @@
+#: Debug
+DEBUG = True
+
+#: Security
+SECRET_KEY = "{{ secret_key }}"
+
+#: Frf configuration
+INSTALLED_MODULES = [
+]
+
+MIDDLEWARE_CLASSES = [
+]
+
+#: Database configuration
+SQLALCHEMY_CONNECTION_URI = 'sqlite:///{{ output_dir }}/{{ project_name }}.db'
+SQLALCHEMY_ECHO = False
+
+#: Cache/Redis
+CACHE = {
+}
