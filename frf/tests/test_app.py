@@ -1,10 +1,14 @@
+import os
+import sys
 import unittest
 
-from frf.tests import fakeproject  # noqa
-from frf.cache.engines.dummy import DummyCacheEngine
-from frf import conf, cache, db
+sys.path.append(os.path.dirname(__file__))
 
-#: NOTE: The tests here are initialed when we import ``fakeproject`` above.
+from frf.tests import fakeproject  # noqa
+from frf.cache.engines.dummy import DummyCacheEngine  # noqa
+from frf import conf, cache, db  # noqa
+
+#: NOTE: The tests here are initializeed when we import ``fakeproject`` above.
 
 
 class TestCase(unittest.TestCase):

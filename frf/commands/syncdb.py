@@ -23,9 +23,13 @@ class Command(BaseCommand):
                         attr, falconmodels.Model):
                     models.append(attr)
 
-        for model in models:
-            if not getattr(model, '__abstract__', False):
-                print('Creating table {}...'.format(
-                    model.__tablename__), end='')  # noqa
-                model.metadata.create_all(db.engine)
-                print(' Done.')
+        if not models:
+            self.error('No models were found.  Have you added your module '
+                       'to "INSTALLED_MODULES"?')
+        else:
+            for model in models:
+                if not getattr(model, '__abstract__', False):
+                    self.info('Creating table {}...'.format(
+                        model.__tablename__), end='')  # noqa
+                    model.metadata.create_all(db.engine)
+                    print(' Done.')

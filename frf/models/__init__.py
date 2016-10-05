@@ -16,12 +16,17 @@ from sqlalchemy import (  # noqa
     UniqueConstraint,
     Index,
 
+    # relationships
+    ForeignKey,
+
+    # operators
     or_,
     and_,
     )
 
 from sqlalchemy.orm import (  # noqa
     relationship,
+    backref,
     )
 
 from frf.models.types import (  # noqa

@@ -188,7 +188,7 @@ class Serializer(object):
 
         Return:
             object: The newly created object.  Fields will not yet be set, that
-                is done by `save_fields` after object creation.
+                is done by ``save_fields`` after object creation.
         """
         obj = SerializerObject()
         return obj
@@ -280,7 +280,7 @@ class ModelSerializer(Serializer):
 
     def __init__(self):
         if not self.Meta.model:
-            raise ValueError('You must specify a model.')
+            raise ValueError(_('You must specify a model.'))
         super().__init__()
 
     def create(self, cleaned_data, obj, **kwargs):
