@@ -106,11 +106,10 @@ def init(project_name, settings_file, base_dir, main_module=None):
         use_greenlet_scope=conf.get('USING_GREENLET', False))
 
     # set up the cache
-    if conf.get('CACHE'):
-        cache.init(conf.get('CACHE') or {})
+    cache.init(conf.get(
+        'CACHE', {'engine': 'frf.cache.engines.dummy.DummyCacheEngine'}))
 
     api = falcon.API(middleware=middleware)
-    # api.add_error_handler(Exception, exceptions.error_handler)
     api.set_error_serializer(exceptions.error_serializer)
 
     route_module_name = '{}.routes'.format(os.path.basename(conf.BASE_DIR))

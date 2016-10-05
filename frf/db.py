@@ -48,6 +48,11 @@ _session_maker = None
 session = None
 
 
+def get_engine():
+    """Return the current database engine."""
+    return engine
+
+
 def init(connection_uri, echo=False, use_greenlet_scope=False):
     """Initialize the session.
 
