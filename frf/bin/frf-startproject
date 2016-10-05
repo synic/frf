@@ -3,6 +3,7 @@
 import uuid
 import os
 import argparse
+import stat
 import jinja2
 import frf
 
@@ -23,11 +24,6 @@ parser.add_argument('-o', '--output', dest='output_dir', default='.',
 parser.add_argument('-n', '--name', dest='name', default=None,
                     help='Project name.  If not specified, the basename of '
                     'the output directory will be used.')
-
-
-def touch(fname, times=None):
-    with open(fname, 'a'):
-        os.utime(fname, times)
 
 
 def copy_skel(template_name, path, **kwargs):
@@ -51,19 +47,26 @@ def create_project_skeleton(output_dir, project_name):
 
     print(col.lightmagenta(text).value(), end='')  # noqa
     print('~' * 70)
-
-    print('Creating main directory...', end='')
+    print('Initilizing project... ')
+    print('Creating main directory... ', end='')
     if not os.path.exists(main_dir):
         os.mkdir(main_dir)
     print('Done.')
+    print('Copying files... ', end='')
     copy_skel('main_init_py', os.path.join(main_dir, '__init__.py'),
               project_name=name)
     copy_skel('settings_py', os.path.join(main_dir, 'settings.py'),
               secret_key=str(uuid.uuid4()), project_name=name,
               output_dir=output_dir)
-    copy_skel('manage_py', os.path.join(output_dir, 'manage.py'),
-              project_name=name)
+    manage_file = os.path.join(output_dir, 'manage.py')
+    copy_skel('manage_py', manage_file, project_name=name)
+    st = os.stat(manage_file)
+    os.chmod(manage_file, st.st_mode | stat.S_IEXEC)
     copy_skel('routes_py', os.path.join(main_dir, 'routes.py'))
+    print('Done.\n')
+    print(col.green(
+        'Congratulations, your project "{}" has been set up'
+        ' successfully in "{}".'.format(name, output_dir)).value())
 
 
 if __name__ == '__main__':

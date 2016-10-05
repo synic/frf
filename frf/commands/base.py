@@ -14,11 +14,11 @@ class BaseCommand(object):
     def add_arguments(self, parser):
         pass
 
-    def _output(self, message, color='RESET'):
+    def _output(self, message, color='RESET', end='\n'):
         handle_name = HANDLE_MAP.get(color, 'stdout')
         handle = getattr(sys, handle_name)
         col = colors.ColorText()
-        handle.write(col.append_text(message, color=color).value() + '\n')
+        handle.write(col.append_text(message, color=color).value() + end)
         handle.flush()
 
     greet = functools.partialmethod(_output, color='LIGHTGREEN_EX')

@@ -16,5 +16,4 @@ SQLALCHEMY_CONNECTION_URI = 'sqlite:///{{ output_dir }}/{{ project_name }}.db'
 SQLALCHEMY_ECHO = False
 
 #: Cache/Redis
-CACHE = {
-}
+CACHE = {'engine': 'frf.cache.engines.dummy.DummyCacheEngine'}  # in-memory engine

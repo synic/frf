@@ -52,6 +52,9 @@ class ColorText(object):
     def blue(self, text):
         return self.append_text(text, color='BLUE')
 
+    def lightblue(self, text):
+        return self.append_text(text, color='LIGHTBLUE_EX')
+
     def yellow(self, text):
         return self.append_text(text, color='YELLOW')
 

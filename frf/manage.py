@@ -47,6 +47,7 @@ def find_commands():
         'frf.commands.shell',
         'frf.commands.test',
         'frf.commands.syncdb',
+        'frf.commands.startmodule',
         ]
 
     module_names += conf.get('COMMAND_MODULES', [])
@@ -80,7 +81,7 @@ def main():
         text = conf.get('PROJECT_NAME', 'frf') + '\n'
 
     col = colors.ColorText()
-    print(col.lightmagenta(text).value(), end='')
+    print(col.lightmagenta(text).value(), end='')  # noqa
     print('~' * 70)
 
     argv = sys.argv[:]
