@@ -4,10 +4,17 @@ import dateutil.parser
 import uuid
 import re
 
+from sqlalchemy.orm import collections
+
 from gettext import gettext as _
 
 from frf.utils.json import deserialize
 from frf import exceptions
+
+
+class RelatedItem(object):
+    def __init__(self, value):
+        self.value = value
 
 
 class Field(object):
@@ -30,6 +37,8 @@ class Field(object):
     anything other then organization purposes.  Validators are validated in the
     order they are defined on the class.
     """
+    requires_model_serializer = False
+
     def __init__(self, required=False, default=None, read_only=False,
                  update_read_only=False, write_only=False, allow_none=None,
                  choices=None, source=None, _debug=None):
@@ -481,3 +490,66 @@ class JSONField(Field):
         if value is None:
             value = self.toplevel()
         return value
+
+
+class PrimaryKeyRelatedField(Field):
+    requires_model_serializer = True
+
+    def __init__(self, model, queryset=None, *args, **kwargs):
+        self.model = model
+        self.queryset = queryset if queryset else self.model.query.filter()
+
+        super().__init__(*args, **kwargs)
+
+    def get_primary_keys(self):
+        mapper = self.model.__mapper__
+        keys = [
+            mapper.get_property_by_column(column).key
+            for column in mapper.primary_key
+            ]
+
+        return keys[0] if len(keys) == 1 else keys
+
+    def to_data(self, value, **kwargs):
+        keys = self.get_primary_keys()
+
+        if not isinstance(keys, list):
+            if isinstance(value, collections.InstrumentedList):
+                values = []
+                for item in value:
+                    values.append(getattr(item, keys))
+            else:
+                values = getattr(value, keys)
+        else:
+            values = {}
+            for key in self.keys:
+                if isinstance(value, collections.InstrumentedList):
+                    values = []
+                    for item in value:
+                        values.append(getattr(item, keys))
+                else:
+                    values[key] = getattr(value, key)
+
+        return values
+
+    def validate_ids(self, value, **kwargs):
+        keys = self.get_primary_keys()
+        item = None
+
+        if not isinstance(value, keys):
+            item = self.queryset.filter_by(**{keys: value}).first()
+        else:
+            if not isinstance(value, dict):
+                raise exceptions.ValidationError(
+                    _('The table {table} has a composite primary key.  You '
+                      'must submit all keys in the format '
+                      '{{"key1": value1, "key2": "value2"}}.'.format(
+                          table=self.model.__tablename__)))
+            item = self.queryset.filter_by(**keys)
+
+        if not item:
+            raise exceptions.ValidationError(
+                _('A row with the key "{key}" does'
+                  ' not exist in the database.'.format(key=keys)))
+
+        return RelatedItem(item)

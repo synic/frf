@@ -353,3 +353,13 @@ class TestCase(unittest.TestCase):
         self.assertIn(
             'does not appear to be an integer',
             context.exception.description['name'][0])
+
+    def test_fail_invalid_field_needs_model_serializer(self):
+        class FakeModel(object):
+            def filter(self):
+                return []
+
+        with self.assertRaises(serializers.InvalidFieldException):
+            new_serializer_class(
+                field=serializers.PrimaryKeyRelatedField(
+                    model=FakeModel()),)

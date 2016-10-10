@@ -1,11 +1,11 @@
 from gettext import gettext as _
 
-from .fields import Field
 from .fields import (  # noqa
-    Field, StringField, EmailField, BooleanField, ISODateTimeField,
-    SerializerField, ListField, UUIDField, JSONField, IntField
+    RelatedItem, Field, StringField, EmailField, BooleanField,
+    ISODateTimeField, SerializerField, ListField, UUIDField, JSONField,
+    IntField, PrimaryKeyRelatedField,
 )
-from frf.exceptions import ValidationError
+from frf.exceptions import ValidationError, InvalidFieldException
 
 
 class SerializerObject(object):
@@ -65,6 +65,13 @@ class Serializer(object):
         for attr_name in dir(self):
             attr = getattr(self, attr_name)
             if isinstance(attr, Field):
+                # check to see if this is a field that requires a
+                # ``ModelSerializer``, and if it's not, raise an exception.
+                if attr.requires_model_serializer and not isinstance(
+                        self, ModelSerializer):
+                    raise InvalidFieldException(_(
+                        'The field {field} requires a ModelSerializer'.format(
+                            field=attr_name)))
                 attr.field_name = attr_name
 
                 if attr.source is None:
@@ -72,8 +79,7 @@ class Serializer(object):
 
                 self.fields[attr_name] = attr
 
-        # these needs to have their order preserved, so don't use
-        # `self.__dict__`
+        # get the validator/clean methods
         for attr_name in dir(self):
             attr = getattr(self, attr_name)
             if attr_name.startswith('clean_') and callable(attr):
@@ -200,6 +206,15 @@ class Serializer(object):
         for key, value in cleaned_data.items():
             field = self.fields.get(key)
             if not field.write_only:
+                if isinstance(field, PrimaryKeyRelatedField):
+                    value = value.value
+                    islist = getattr(
+                        self.Meta.model, field.source).property.uselist
+
+                    if islist:
+                        getattr(obj, key).append(value)
+                        continue
+
                 setattr(obj, key, value)
 
     def save(self, obj=None, data=None, **kwargs):

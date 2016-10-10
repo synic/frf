@@ -28,12 +28,12 @@ class Command(BaseCommand):
         self.greet('Oh hai, starting gunicorn...')
         app_name = os.path.basename(conf.get('BASE_DIR'))
         os.system(
-            'gunicorn --access-logfile - --error-logfile - --bind {} '
-            '--workers {} --timeout {} --threads {} {} {}:app.api'.format(
+            'gunicorn {} --access-logfile - --error-logfile - --bind {} '
+            '--workers {} --timeout {} --threads {} {}:app.api'.format(
+                '--reload' if args.reload == 'reload' else '',
                 args.bind,
                 args.workers,
                 args.timeout,
                 args.threads,
-                '--reload' if args.reload == 'reload' else '',
                 app_name,
             ))
