@@ -1,7 +1,7 @@
 from gettext import gettext as _
 
 from .fields import (  # noqa
-    RelatedItem, Field, StringField, EmailField, BooleanField,
+    Field, StringField, EmailField, BooleanField,
     ISODateTimeField, SerializerField, ListField, UUIDField, JSONField,
     IntField, PrimaryKeyRelatedField,
 )
@@ -73,6 +73,7 @@ class Serializer(object):
                         'The field {field} requires a ModelSerializer'.format(
                             field=attr_name)))
                 attr.field_name = attr_name
+                attr._serializer = self
 
                 if attr.source is None:
                     attr.source = attr_name
@@ -121,7 +122,7 @@ class Serializer(object):
 
             if field_name not in data and not field.required \
                     and not obj \
-                    and not isinstance(field, SerializerField):
+                    and not isinstance(field, (SerializerField, JSONField)):
                 default = field.default
                 if callable(default):
                     default = default()
@@ -206,15 +207,6 @@ class Serializer(object):
         for key, value in cleaned_data.items():
             field = self.fields.get(key)
             if not field.write_only:
-                if isinstance(field, PrimaryKeyRelatedField):
-                    value = value.value
-                    islist = getattr(
-                        self.Meta.model, field.source).property.uselist
-
-                    if islist:
-                        getattr(obj, key).append(value)
-                        continue
-
                 setattr(obj, key, value)
 
     def save(self, obj=None, data=None, **kwargs):

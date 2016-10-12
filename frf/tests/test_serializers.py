@@ -14,6 +14,16 @@ class DummySerializer(serializers.Serializer):
     is_awesome = serializers.BooleanField(required=False, default=True)
 
 
+class FakeQuery(object):
+    def filter(self):
+        return []
+
+
+class FakeModel(object):
+    def __init__(self):
+        self.query = FakeQuery()
+
+
 def new_serializer_class(**kwargs):
     return type('Serializer', (serializers.Serializer,), kwargs)()
 
@@ -303,7 +313,7 @@ class TestCase(unittest.TestCase):
         self.assertIsInstance(obj.uuid, uuid.UUID)
         self.assertEqual(obj.uuid, u)
 
-    def test_validate_serializer_field(self):
+    def test_validate_json_field(self):
         settings = new_serializer_class(
             stay_logged_in=serializers.BooleanField(default=True),
         )
@@ -313,13 +323,13 @@ class TestCase(unittest.TestCase):
                 required=True, allow_blank=False, allow_none=False),
             password=serializers.StringField(
                 required=True, allow_blank=False, allow_none=False),
-            settings=serializers.SerializerField(
-                settings, default={}, create_object=False, allow_none=True),
+            settings=serializers.JSONField(
+                validating_serializer=settings, default={}, allow_none=True),
             )
 
         serializer = new_serializer_class(
             credentials=serializers.SerializerField(
-                credentials, required=True, create_object=True),
+                credentials, required=True),
             )
 
         obj = serializer.save(data={
@@ -355,10 +365,6 @@ class TestCase(unittest.TestCase):
             context.exception.description['name'][0])
 
     def test_fail_invalid_field_needs_model_serializer(self):
-        class FakeModel(object):
-            def filter(self):
-                return []
-
         with self.assertRaises(serializers.InvalidFieldException):
             new_serializer_class(
                 field=serializers.PrimaryKeyRelatedField(
