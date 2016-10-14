@@ -1,10 +1,15 @@
+import falcon
 import uuid
 import unittest
 import datetime
 
 from frf.utils import timezone
-from frf import serializers
-from frf import exceptions
+from frf import serializers, exceptions, db
+from frf.tests.base import BaseTestCase
+from frf.utils.json import serialize
+
+from frf.tests import fakeproject  # noqa
+from frf.tests.fakemodule import models
 
 
 class DummySerializer(serializers.Serializer):
@@ -369,3 +374,166 @@ class TestCase(unittest.TestCase):
             new_serializer_class(
                 field=serializers.PrimaryKeyRelatedField(
                     model=FakeModel()),)
+
+
+class FakeProjectTestCase(BaseTestCase):
+    def setUp(self):
+        super().setUp()
+        models.Author.metadata.create_all(db.engine)
+        models.Book.metadata.create_all(db.engine)
+        models.Company.metadata.create_all(db.engine)
+
+        models.Company.query.delete()
+        models.Author.query.delete()
+        models.Book.query.delete()
+
+        self.api = fakeproject.app.api
+
+        self.company = models.Company(name='Ender Labs')
+
+        # create some fake objects
+        self.adam = models.Author(name='Adam Olsen', company=self.company)
+        self.ross = models.Author(name='Ross Buchanan', company=self.company)
+
+        self.books = [
+            models.Book(author=self.adam,
+                        title='Gone with the wind.'),
+            models.Book(author=self.adam,
+                        title='Sinbad'),
+            models.Book(author=self.ross,
+                        title='Vanishing Friend'),
+            models.Book(author=self.ross,
+                        title='Wherefore art thou?'),
+        ]
+
+        db.session.add(self.company)
+        db.session.add(self.adam)
+        db.session.add(self.ross)
+
+        for book in self.books:
+            db.session.add(book)
+
+        db.session.commit()
+
+    def test_index_companies(self):
+        res = self.simulate_get('/companies/')
+        self.assertEqual(falcon.HTTP_200, res.status)
+
+        json = res.json
+        self.assertEqual(1, len(json))
+        company = json[0]
+
+        self.assertEqual(3, len(company))
+
+        self.assertIsInstance(company['authors'], list)
+        self.assertIsInstance(company['id'], int)
+        self.assertIsInstance(company['name'], str)
+
+        self.assertEquals(2, len(company['authors']))
+        self.assertEquals(2, len(company['authors'][0]))
+
+        self.assertEquals(company['authors'][0]['uuid1'], str(self.adam.uuid1))
+        self.assertEquals(company['authors'][0]['uuid2'], str(self.adam.uuid2))
+
+        self.assertEquals(company['authors'][1]['uuid1'], str(self.ross.uuid1))
+        self.assertEquals(company['authors'][1]['uuid2'], str(self.ross.uuid2))
+
+    def test_update_company(self):
+        c = models.Company(name='SOC')
+        db.session.add(c)
+        db.session.commit()
+
+        update_data = {
+            'authors': [
+                {'uuid1': self.adam.uuid1, 'uuid2': self.adam.uuid2},
+            ]
+        }
+
+        res = self.simulate_patch(
+            '/companies/{id}/'.format(id=c.id), body=serialize(update_data))
+
+        self.assertEqual(res.status, falcon.HTTP_204)
+
+        db.session.refresh(c)
+
+        self.assertEqual(len(c.authors), 1)
+        self.assertEqual(c.authors[0], self.adam)
+
+    def test_index_books(self):
+        res = self.simulate_get('/books/')
+        self.assertEqual(falcon.HTTP_200, res.status)
+
+        json = res.json
+
+        self.assertEqual(len(json), 4)
+
+        for item in json:
+            self.assertEqual(len(item['author']), 2)
+            self.assertIsInstance(item['author'], dict)
+            self.assertIsInstance(item['id'], int)
+            self.assertIsInstance(item['title'], str)
+
+            author = item['author']
+            self.assertIsInstance(author['uuid1'], str)
+            self.assertIsInstance(author['uuid2'], str)
+
+    def test_create_book(self):
+        create_data = {
+            'title': 'Book Time',
+            'author': {
+                'uuid1': self.ross.uuid1,
+                'uuid2': self.ross.uuid2,
+            },
+        }
+
+        res = self.simulate_post(
+            '/books/', body=serialize(create_data))
+
+        self.assertEqual(res.status, falcon.HTTP_201)
+
+        json = res.json
+        author = json['author']
+        self.assertEqual(author['uuid1'], str(self.ross.uuid1))
+        self.assertEqual(author['uuid2'], str(self.ross.uuid2))
+
+    def test_index_authors(self):
+        res = self.simulate_get('/authors/')
+        self.assertEquals(falcon.HTTP_200, res.status)
+
+        json = res.json
+
+        self.assertEqual(2, len(json))
+
+        for author in json:
+            self.assertEqual(5, len(author))
+
+            self.assertIsInstance(author['books'], list)
+            self.assertIsInstance(author['name'], str)
+            self.assertIsInstance(author['uuid1'], str)
+            self.assertIsInstance(author['uuid2'], str)
+            self.assertIsInstance(author['company'], int)
+
+            if author['name'] == 'Adam Olsen':
+                self.assertIn(1, author['books'])
+                self.assertIn(2, author['books'])
+            else:
+                self.assertIn(3, author['books'])
+                self.assertIn(4, author['books'])
+
+    def test_update_author(self):
+        book = self.books[3]
+
+        update_data = {
+            'books': [book.id],
+        }
+
+        res = self.simulate_patch('/authors/{uuid1}/{uuid2}/'.format(
+            uuid1=str(self.adam.uuid1),
+            uuid2=str(self.adam.uuid2)), body=serialize(update_data))
+
+        self.assertEqual(res.status, falcon.HTTP_204)
+
+        db.session.refresh(self.adam)
+
+        self.assertEqual(1, len(self.adam.books))
+        self.assertEqual(self.adam.books[0], book)

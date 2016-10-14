@@ -21,4 +21,3 @@ class TestCase(unittest.TestCase):
             importing.import_class('frf.tests.test_utils.test_importing')
 
         self.assertIn('does not refer to a class', str(context.exception))
-

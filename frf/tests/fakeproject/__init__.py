@@ -6,4 +6,5 @@ settingsfile = 'frf.tests.fakeproject.settings'
 basedir = os.path.abspath(
     os.path.join(os.path.dirname(__file__)))
 
-app.init('fakeproject', settingsfile, basedir)
+app.init('fakeproject', settingsfile, basedir,
+         main_module='frf.tests.fakeproject')

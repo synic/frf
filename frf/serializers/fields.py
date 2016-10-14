@@ -556,9 +556,15 @@ class PrimaryKeyRelatedField(Field):
     def __init__(self, model, queryset=None, many=False, *args, **kwargs):
         self.model = model
         self.many = many
-        self.queryset = queryset if queryset else self.model.query.filter()
+        self._queryset = queryset
 
         super().__init__(*args, **kwargs)
+
+    @property
+    def queryset(self):
+        if not self._queryset:
+            return self.model.query.filter()
+        return self._queryset
 
     def get_primary_keys(self):
         mapper = self.model.__mapper__
@@ -576,77 +582,100 @@ class PrimaryKeyRelatedField(Field):
             if self.many:
                 values = []
                 for item in value:
-                    values.append(getattr(item, keys))
+                    v = getattr(item, keys, None)
+                    if isinstance(v, uuid.UUID):
+                        v = str(v)
+                    values.append(v)
             else:
-                values = getattr(value, keys)
+                values = getattr(value, keys, None)
+                if isinstance(values, uuid.UUID):
+                    values = str(values)
         else:
-            values = {}
-            for key in self.keys:
-                if self.many:
-                    values = []
-                    for item in value:
-                        values.append(getattr(item, keys))
-                else:
-                    values[key] = getattr(value, key)
+            if self.many:
+                values = []
+                for item in value:
+                    curval = {}
+                    for key in keys:
+                        v = getattr(item, key, None)
+                        if isinstance(v, uuid.UUID):
+                            v = str(v)
+                        curval[key] = v
+                    values.append(curval)
+            else:
+                values = {}
+                for key in keys:
+                    values[key] = getattr(value, key, None)
+                    if isinstance(values[key], uuid.UUID):
+                        values[key] = str(values[key])
 
         return values
 
-    def to_python(self, value, **kwargs):
-        keys = self.get_primary_keys()
+    def get_items_many(self, value, validate=False, **kwargs):
         items = []
+        keys = self.get_primary_keys()
+        for item in value:
+            if not isinstance(keys, (list, tuple)):
+                items.append(
+                    self.queryset.filter_by(
+                        **{keys: item}).first())
+            else:
+                if validate:
+                    if not isinstance(item, dict):
+                        raise exceptions.ValidationError(
+                            self.MESSAGES['multikey'].format(
+                                table=self.model.__tablename__))
+                items.append(
+                    self.queryset.filter_by(
+                        **self.build_lookup(keys, item)).first())
+        return items
 
+    def get_item_single(self, value, validate=False, **kwargs):
+        item = None
+        keys = self.get_primary_keys()
+        if not isinstance(keys, list):
+            item = self.queryset.filter_by(**{keys: value}).first()
+        else:
+            if validate:
+                if not isinstance(value, dict):
+                    raise exceptions.ValidationError(
+                        self.MESSAGES['multikey'].format(
+                            table=self.model.__tablename__))
+            item = self.queryset.filter_by(
+                **self.build_lookup(keys, value)).first()
+
+        return item
+
+    def to_python(self, value, **kwargs):
         if value:
             if self.many:
-                if not isinstance(keys, (list, tuple)):
-                    for item in value:
-                        if not isinstance(keys, list):
-                            items.append(
-                                self.queryset.filter_by(
-                                    **{keys: item}).first())
-                        else:
-                            items.append(
-                                self.queryset.filter_by(
-                                    **self.build_lookup(keys, item)).first())
+                value = self.get_items_many(value, **kwargs)
             else:
-                if not isinstance(keys, list):
-                    items.append(
-                        self.queryset.filter_by(**{keys: value}).first())
-                else:
-                    items.append(self.queryset.filter_by(
-                        **self.build_lookup(keys, value)).first())
+                value = self.get_item_single(value, **kwargs)
 
-        return items if self.many else items[0]
+        return value
+
+    def build_lookup(self, keys, item):
+        lookup = {}
+
+        if isinstance(keys, (list, tuple)):
+            for key in keys:
+                lookup[key] = item[key]
+        else:
+            lookup = {keys: item}
+
+        return lookup
 
     def validate_ids(self, value, **kwargs):
         keys = self.get_primary_keys()
-        items = []
+        retval = None
 
         if value:
             if self.many:
-                for item in value:
-                    if not isinstance(keys, (list, tuple)):
-                        items.append(
-                            self.queryset.filter_by(**{keys: item}).first())
-                    else:
-                        if not isinstance(value, dict):
-                            raise exceptions.ValidationError(
-                                self.MESSAGES['multikey'].format(
-                                    table=self.model.__tablename__))
-                        items.append(self.queryset.filter_by(
-                            **self.build_lookup(keys, item)).first())
+                retval = self.get_items_many(value, validate=True, **kwargs)
             else:
-                if not isinstance(keys, (list, tuple)):
-                    items.append(
-                        self.queryset.filter_by(**{keys: value}).first())
-                else:
-                    if not isinstance(value, dict):
-                            raise exceptions.ValidationError(
-                                self.MESSAGES['multikey'].format(
-                                    table=self.model.__tablename__))
-                    items.append(self.queryset.filter_by(
-                        **self.build_lookup(keys, value)).first())
+                retval = self.get_item_single(value, validate=True, **kwargs)
 
-        if not items and value:
+        if not retval and value:
             raise exceptions.ValidationError(
                 _('A row with the key "{key}" does'
                   ' not exist in the database.'.format(key=keys)))

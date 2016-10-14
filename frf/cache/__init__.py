@@ -17,6 +17,7 @@ in your settings:
 If the ``default_timeout`` key is not provided, ``30`` seconds will be
 used.
 """
+import copy
 from gettext import gettext as _
 
 from frf.utils.importing import import_class
@@ -33,7 +34,13 @@ def init(args):
     """
     global _cache_engine
 
-    engine_cls_name = args.pop('engine')
+    if not isinstance(args, dict):
+        raise exceptions.CacheInvalidEngine(
+            _('Invalid configuration specified.'))
+
+    args = copy.deepcopy(args)
+
+    engine_cls_name = args.pop('engine', None)
     if not engine_cls_name:
         raise exceptions.CacheInvalidEngine(
             _('Invalid cache engine specified.'))

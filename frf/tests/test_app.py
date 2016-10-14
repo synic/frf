@@ -1,8 +1,4 @@
-import os
-import sys
 import unittest
-
-sys.path.append(os.path.dirname(__file__))
 
 from frf.tests import fakeproject  # noqa
 from frf.cache.engines.dummy import DummyCacheEngine  # noqa
