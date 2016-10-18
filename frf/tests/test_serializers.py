@@ -329,7 +329,7 @@ class TestCase(unittest.TestCase):
             password=serializers.StringField(
                 required=True, allow_blank=False, allow_none=False),
             settings=serializers.JSONField(
-                validating_serializer=settings, default={}, allow_none=True),
+                validator=settings, default={}, allow_none=True),
             )
 
         serializer = new_serializer_class(

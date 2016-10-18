@@ -30,3 +30,5 @@ Serializer Fields
 
 .. autoclass:: frf.serializers.fields.SerializerField
    :members:
+
+.. autoclass:: frf.serializers.fields.PrimaryKeyRelatedField

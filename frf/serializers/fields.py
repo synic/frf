@@ -411,13 +411,15 @@ class JSONField(Field):
 
     Can use another serializer for validation.
     """
-    def __init__(self, validating_serializer=None, many=False, **kwargs):
+    def __init__(self, validator=None, many=False, **kwargs):
         """
         Args:
+            validator (frf.serializers.Serializer): The serializer to use for
+                validation of this JSON object.
             many (bool): Set to ``True`` if this will be a list of json objects
                 instead of a single object.
         """
-        self.validating_serializer = validating_serializer
+        self.validator = validator
         self.many = many
         super().__init__(**kwargs)
 
@@ -438,13 +440,13 @@ class JSONField(Field):
         if isinstance(value, str):
             value = deserialize(value)
 
-        if self.validating_serializer and value:
+        if self.validator and value:
             if self.many:
                 for item in value:
-                    self.validating_serializer.validate(
+                    self.validator.validate(
                         obj=obj, data=item, **kwargs)
             else:
-                self.validating_serializer.validate(
+                self.validator.validate(
                     obj=obj, data=value, **kwargs)
 
     def to_python(self, value=None, **kwargs):
@@ -453,13 +455,13 @@ class JSONField(Field):
 
         items = []
 
-        if self.validating_serializer:
+        if self.validator:
             if self.many and value:
                 for item in value:
                     items.append(
-                        self.validating_serializer.validate(data=item))
+                        self.validator.validate(data=item))
             else:
-                items.append(self.validating_serializer.validate(data=value))
+                items.append(self.validator.validate(data=value))
         else:
             return value
 
@@ -545,6 +547,26 @@ class PrimaryKeyRelatedField(Field):
 
     Requires that you use this field on a
     :class:`frf.serializers.ModelSerializer`
+
+    For example:
+
+    .. code-block:: python
+       :caption: serializers.py
+
+       from frf import serializers
+       from myproject import models
+
+
+       class AuthorSerializer(frf.ModelSerializer):
+           name = serializers.StringField()
+           books = serializers.PrimaryKeyRelatedField(
+               model=models.Book, many=True)
+
+    Will produce output something like this:
+
+    .. code-block:: text
+
+        {"name": "Dean Koontz", "books": [1, 2, 3, 4]}
     """
     requires_model_serializer = True
     MESSAGES = {
@@ -554,6 +576,14 @@ class PrimaryKeyRelatedField(Field):
     }
 
     def __init__(self, model, queryset=None, many=False, *args, **kwargs):
+        """
+        Args:
+            model (frf.serializers.model.Model): The related model.
+            queryset (sqlalchemy.orm.Query): The query.  If not specified,
+                ``model.query.filter()`` will be used.
+            many (boolean): Set to true if this relationship is a many-to-one
+                or many-to-many relationship.
+        """
         self.model = model
         self.many = many
         self._queryset = queryset
@@ -611,6 +641,16 @@ class PrimaryKeyRelatedField(Field):
         return values
 
     def get_items_many(self, value, validate=False, **kwargs):
+        """Create a list of referenced items.
+
+        Args:
+            value (list): The ids. Must be a list of IDS. Each ID can be a
+                single ID or a dictionary of IDS in the case of a composite
+                primary key.
+            validate (boolean): Set to ``True`` if you are calling this method
+                from the validation step.  In the case of errors, a
+                ``ValidationError`` will be raised.
+        """
         items = []
         keys = self.get_primary_keys()
         for item in value:
@@ -630,6 +670,15 @@ class PrimaryKeyRelatedField(Field):
         return items
 
     def get_item_single(self, value, validate=False, **kwargs):
+        """Get a single referenced item.
+
+        Args:
+            value (object): The id. The ID can be a single ID or a dictionary
+                of IDS in the case of a composite primary key.
+            validate (boolean): Set to ``True`` if you are calling this method
+                from the validation step.  In the case of errors, a
+                ``ValidationError`` will be raised.
+        """
         item = None
         keys = self.get_primary_keys()
         if not isinstance(keys, list):
