@@ -30,9 +30,11 @@ class Field(object):
     anything other then organization purposes.  Validators are validated in the
     order they are defined on the class.
     """
-    def __init__(self, required=False, default=None, read_only=False,
-                 update_read_only=False, write_only=False, allow_none=None,
-                 choices=None, source=None, _debug=None):
+    requires_model_serializer = False
+
+    def __init__(self, required=False, default=None,
+                 read_only=False, update_read_only=False, write_only=False,
+                 allow_none=None, choices=None, source=None, _debug=None):
         """Initialize the field.
 
         Args:
@@ -53,6 +55,7 @@ class Field(object):
             choices (list): If passed, during validation, the system will check
                 if the passed value is in the list of choices.
         """
+        self._serializer = None
         self.validators = []
         self.required = required
         self.default = default
@@ -349,36 +352,6 @@ class UUIDField(Field):
         return str(value)
 
 
-class SerializerField(Field):
-    """Validate another serializer as a field."""
-    def __init__(self, serializer, create_object=True, **kwargs):
-        """
-        Args:
-            serializer (:class:`frf.serializers.Serializer`): The serializer.
-            create_object (bool): Set to ``True`` to create an object/model and
-                assign it to the field on the parent, or ``False`` to use the
-                dictionary value instead.
-        """
-        self.serializer = serializer
-        self.create_object = create_object
-        super().__init__(**kwargs)
-
-    def validate(self, obj=None, value=None, data=None, **kwargs):
-        try:
-            self.serializer.validate(
-                obj=obj, data=value, **kwargs)
-        except exceptions.ValidationError as exception:
-            return [exception.description]
-
-    def to_python(self, obj=None, value=None, data=None, **kwargs):
-        if self.create_object:
-            return self.serializer.save(
-                obj=obj, data=value, **kwargs)
-        else:
-            return self.serializer.validate(
-                obj=obj, data=value, **kwargs)
-
-
 class ListField(Field):
     """A list validation field.
 
@@ -434,17 +407,18 @@ class ListField(Field):
 
 
 class JSONField(Field):
-    """Simple json validation field."""
-    def __init__(self, toplevel=dict, **kwargs):
+    """Simple json validation field.
+
+    Can use another serializer for validation.
+    """
+    def __init__(self, validating_serializer=None, many=False, **kwargs):
         """
         Args:
-            toplevel (type, dict or list): The type of the toplevel object in
-                the data, ie, ``dict`` or ``list``.
+            many (bool): Set to ``True`` if this will be a list of json objects
+                instead of a single object.
         """
-        if toplevel not in (dict, list):
-            raise exceptions.ValidationError(
-                _('Top level object must be set to dict or list'))
-        self.toplevel = toplevel
+        self.validating_serializer = validating_serializer
+        self.many = many
         super().__init__(**kwargs)
 
     def validate_structure(self, value, **kwargs):
@@ -457,27 +431,251 @@ class JSONField(Field):
                 raise exceptions.ValidationError(
                     _('Does not appear to be valid json.'))
 
-        if not isinstance(value, self.toplevel):
-            raise exceptions.ValidationError(
-                _('Must be a {type}.'.format(
-                    type='dict'
-                    if isinstance(self.toplevel, dict) else 'list')))
+        if self.many and not isinstance(value, (list, tuple)):
+            raise exceptions.ValidationError(_('Must be a list.'))
 
-    def to_python(self, value, **kwargs):
-        if self.allow_none and value is None:
-            return value
-
+    def validate_fields(self, obj=None, value=None, data=None, **kwargs):
         if isinstance(value, str):
             value = deserialize(value)
 
-        if value is None:
-            value = self.toplevel()
-        return value
+        if self.validating_serializer and value:
+            if self.many:
+                for item in value:
+                    self.validating_serializer.validate(
+                        obj=obj, data=item, **kwargs)
+            else:
+                self.validating_serializer.validate(
+                    obj=obj, data=value, **kwargs)
+
+    def to_python(self, value=None, **kwargs):
+        if isinstance(value, str):
+            value = deserialize(value)
+
+        items = []
+
+        if self.validating_serializer:
+            if self.many and value:
+                for item in value:
+                    items.append(
+                        self.validating_serializer.validate(data=item))
+            else:
+                items.append(self.validating_serializer.validate(data=value))
+        else:
+            return value
+
+        return items if self.many else items[0]
 
     def to_data(self, value, **kwargs):
         if isinstance(value, str):
             value = deserialize(value)
 
-        if value is None:
-            value = self.toplevel()
         return value
+
+
+class SerializerField(Field):
+    """Validate another serializer as a field."""
+    def __init__(self, serializer, many=False, **kwargs):
+        """
+        Args:
+            serializer (:class:`frf.serializers.Serializer`): The serializer.
+            many (bool): Set to ``True`` if this should be a list of objects,
+                instead of just a single object.
+        """
+        self.serializer = serializer
+        self.many = many
+        super().__init__(**kwargs)
+
+    def validate(self, obj=None, value=None, data=None, **kwargs):
+        errors = []
+        if isinstance(value, str):
+            try:
+                value = deserialize(value)
+            except json.JSONDecodeError:
+                raise exceptions.ValidationError(
+                    _('Does not appear to be valid json.'))
+
+        if self.many and not isinstance(value, (list, tuple)):
+            raise exceptions.ValidationError(
+                _('Value must be a list.'))
+
+        if not self.many:
+            try:
+                self.serializer.validate(
+                    obj=obj, data=value, **kwargs)
+            except exceptions.ValidationError as exception:
+                errors.append(exception.description)
+        else:
+            for item in value:
+                try:
+                    self.serializer.validate(obj=obj, data=item, **kwargs)
+                except exceptions.ValidationError as exception:
+                    errors.append(exception.description)
+
+        if errors:
+            raise exceptions.ValidationError(errors)
+
+    def to_data(self, value, **kwargs):
+        items = []
+
+        if self.many:
+            for item in value:
+                items.append(self.serializer.serialize(data=item))
+        else:
+            items.append(self.serializer.serialize(data=value))
+
+        return items if self.many else items[0]
+
+    def to_python(self, obj=None, value=None, data=None, **kwargs):
+        items = []
+        if isinstance(value, str):
+            value = deserialize(value)
+
+        if self.many:
+            for item in value:
+                items.append(
+                    self.serializer.save(obj=obj, data=item, **kwargs))
+        else:
+            items.append(self.serializer.save(obj=obj, data=value, **kwargs))
+
+        return items if self.many else items[0]
+
+
+class PrimaryKeyRelatedField(Field):
+    """Represent objects as a list of related keys.
+
+    Requires that you use this field on a
+    :class:`frf.serializers.ModelSerializer`
+    """
+    requires_model_serializer = True
+    MESSAGES = {
+        'multikey': _('The table {table} has a composite primary key. You '
+                      'must submit all keys in the format {{"key1": value1, '
+                      '"key2": "value2"}}'),
+    }
+
+    def __init__(self, model, queryset=None, many=False, *args, **kwargs):
+        self.model = model
+        self.many = many
+        self._queryset = queryset
+
+        super().__init__(*args, **kwargs)
+
+    @property
+    def queryset(self):
+        if not self._queryset:
+            return self.model.query.filter()
+        return self._queryset
+
+    def get_primary_keys(self):
+        mapper = self.model.__mapper__
+        keys = [
+            mapper.get_property_by_column(column).key
+            for column in mapper.primary_key
+            ]
+
+        return keys[0] if len(keys) == 1 else keys
+
+    def to_data(self, value, **kwargs):
+        keys = self.get_primary_keys()
+
+        if not isinstance(keys, (list, tuple)):
+            if self.many:
+                values = []
+                for item in value:
+                    v = getattr(item, keys, None)
+                    if isinstance(v, uuid.UUID):
+                        v = str(v)
+                    values.append(v)
+            else:
+                values = getattr(value, keys, None)
+                if isinstance(values, uuid.UUID):
+                    values = str(values)
+        else:
+            if self.many:
+                values = []
+                for item in value:
+                    curval = {}
+                    for key in keys:
+                        v = getattr(item, key, None)
+                        if isinstance(v, uuid.UUID):
+                            v = str(v)
+                        curval[key] = v
+                    values.append(curval)
+            else:
+                values = {}
+                for key in keys:
+                    values[key] = getattr(value, key, None)
+                    if isinstance(values[key], uuid.UUID):
+                        values[key] = str(values[key])
+
+        return values
+
+    def get_items_many(self, value, validate=False, **kwargs):
+        items = []
+        keys = self.get_primary_keys()
+        for item in value:
+            if not isinstance(keys, (list, tuple)):
+                items.append(
+                    self.queryset.filter_by(
+                        **{keys: item}).first())
+            else:
+                if validate:
+                    if not isinstance(item, dict):
+                        raise exceptions.ValidationError(
+                            self.MESSAGES['multikey'].format(
+                                table=self.model.__tablename__))
+                items.append(
+                    self.queryset.filter_by(
+                        **self.build_lookup(keys, item)).first())
+        return items
+
+    def get_item_single(self, value, validate=False, **kwargs):
+        item = None
+        keys = self.get_primary_keys()
+        if not isinstance(keys, list):
+            item = self.queryset.filter_by(**{keys: value}).first()
+        else:
+            if validate:
+                if not isinstance(value, dict):
+                    raise exceptions.ValidationError(
+                        self.MESSAGES['multikey'].format(
+                            table=self.model.__tablename__))
+            item = self.queryset.filter_by(
+                **self.build_lookup(keys, value)).first()
+
+        return item
+
+    def to_python(self, value, **kwargs):
+        if value:
+            if self.many:
+                value = self.get_items_many(value, **kwargs)
+            else:
+                value = self.get_item_single(value, **kwargs)
+
+        return value
+
+    def build_lookup(self, keys, item):
+        lookup = {}
+
+        if isinstance(keys, (list, tuple)):
+            for key in keys:
+                lookup[key] = item[key]
+        else:
+            lookup = {keys: item}
+
+        return lookup
+
+    def validate_ids(self, value, **kwargs):
+        keys = self.get_primary_keys()
+        retval = None
+
+        if value:
+            if self.many:
+                retval = self.get_items_many(value, validate=True, **kwargs)
+            else:
+                retval = self.get_item_single(value, validate=True, **kwargs)
+
+        if not retval and value:
+            raise exceptions.ValidationError(
+                _('A row with the key "{key}" does'
+                  ' not exist in the database.'.format(key=keys)))

@@ -29,6 +29,16 @@ class ValidationError(HTTPError):
             description=message)
 
 
+class InvalidFieldException(Exception):
+    """Exception to raise when a serializer contains an invalid field.
+
+    For example: a field that requires a
+    :class:`frf.serializers.ModelSerializer` that is on a
+    :class:`frf.serializers.Serializer`
+    """
+    pass
+
+
 def error_serializer(req, resp, exception):
     body = exception.to_dict()
     if conf.get('DEBUG', False):

@@ -32,7 +32,6 @@ this should already be done for you.
 """
 import falcon
 import importlib
-import os
 import logging
 import logging.config
 
@@ -101,7 +100,7 @@ def init(project_name, settings_file, base_dir, main_module=None):
 
     # set up the database
     db.init(
-        conf.get('SQLALCHEMY_CONNECTION_URI', 'sqlite://'),
+        conf.get('SQLALCHEMY_CONNECTION_URI', 'sqlite:///:memory:'),
         echo=conf.get('SQLALCHEMY_ECHO', False),
         use_greenlet_scope=conf.get('USING_GREENLET', False))
 
@@ -112,7 +111,7 @@ def init(project_name, settings_file, base_dir, main_module=None):
     api = falcon.API(middleware=middleware)
     api.set_error_serializer(exceptions.error_serializer)
 
-    route_module_name = '{}.routes'.format(os.path.basename(conf.BASE_DIR))
+    route_module_name = '{}.routes'.format(main_module)
     try:
         route_module = importlib.import_module(route_module_name)
         module_routes = getattr(route_module, 'routes', None)
