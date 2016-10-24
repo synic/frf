@@ -1,6 +1,7 @@
 import uuid
 import hashlib
 import base64
+import hmac
 
 from Crypto import Random
 from Crypto.Cipher import AES
@@ -31,7 +32,13 @@ class AESCipher(object):
         raw = self._pad(raw)
         iv = Random.new().read(AES.block_size)
         cipher = AES.new(self.key, AES.MODE_CBC, iv)
-        return base64.b64encode(iv + cipher.encrypt(raw))
+
+        ciphertext = cipher.encrypt(raw)
+        cipher_msg = iv + ciphertext
+        hmac_obj = hmac.new(self.key, msg=cipher_msg, digestmod='sha512')
+        hmac_digest = hmac_obj.digest()
+
+        return base64.b64encode(hmac_digest + cipher_msg)
 
     def decrypt(self, enc):
         enc = base64.b64decode(enc)
