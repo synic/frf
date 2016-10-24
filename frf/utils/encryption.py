@@ -38,7 +38,7 @@ class AESCipher(object):
         hmac_obj = hmac.new(self.key, msg=cipher_msg, digestmod='sha512')
         hmac_digest = hmac_obj.digest()
 
-        return base64.b64encode(hmac_digest + cipher_msg)
+        return base64.b64encode(cipher_msg + hmac_digest)
 
     def decrypt(self, enc):
         enc = base64.b64decode(enc)
