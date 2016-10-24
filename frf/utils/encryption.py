@@ -41,13 +41,23 @@ class AESCipher(object):
         return base64.b64encode(cipher_msg + hmac_digest)
 
     def decrypt(self, enc):
+        hmac_digest_size = hashlib.sha512().digest_size
         enc = base64.b64decode(enc)
+
         iv = enc[:AES.block_size]
+        hmac_digest = enc[-hmac_digest_size:]
+        ciphertext = enc[AES.block_size:-hmac_digest_size]
+
+        # Verify the HMAC before decrypting
+        hmac_obj = hmac.new(self.key, msg=iv+ciphertext, digestmod='sha512')
+        if not hmac.compare_digest(hmac_digest, hmac_obj.digest()):
+            raise DecryptionError('HMAC could not be verified')
+
         cipher = AES.new(self.key, AES.MODE_CBC, iv)
 
         try:
             data = self._unpad(
-                cipher.decrypt(enc[AES.block_size:])).decode('utf-8')
+                cipher.decrypt(ciphertext)).decode('utf-8')
         except UnicodeDecodeError:
             raise DecryptionError()
 
