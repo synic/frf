@@ -54,8 +54,17 @@ class AESCipher(object):
         return data[len(_MAGIC):]
 
     def _pad(self, s):
-        return (s + (self.bs - len(s) % self.bs) *
-                chr(self.bs - len(s) % self.bs))
+        pad_length = AES.block_size - (len(s) % AES.block_size)
+
+        # Add pad even if it is a multiple already as per RFC 5652
+        if pad_length == 0:
+            pad_length = AES.block_size
+        pad = pad_length.to_bytes(1, 'big') * pad_length
+
+        return s.encode() + pad
 
     def _unpad(self, s):
-        return s[:-ord(s[len(s)-1:])]
+        # As per PKCS#7, the padded length is on any of the bits, just grab
+        # the last one.
+        pad_length = s[-1]
+        return s[:-pad_length]
