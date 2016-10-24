@@ -6,8 +6,6 @@ import hmac
 from Crypto import Random
 from Crypto.Cipher import AES
 
-_MAGIC = '__frf_encrypted'
-
 
 class DecryptionError(Exception):
     pass
@@ -28,7 +26,6 @@ class AESCipher(object):
         self.key = hashlib.sha256(key.encode()).digest()
 
     def encrypt(self, raw):
-        raw = '{}{}'.format(_MAGIC, raw)
         raw = self._pad(raw)
         iv = Random.new().read(AES.block_size)
         cipher = AES.new(self.key, AES.MODE_CBC, iv)
@@ -44,9 +41,12 @@ class AESCipher(object):
         hmac_digest_size = hashlib.sha512().digest_size
         enc = base64.b64decode(enc)
 
-        iv = enc[:AES.block_size]
-        hmac_digest = enc[-hmac_digest_size:]
-        ciphertext = enc[AES.block_size:-hmac_digest_size]
+        try:
+            iv = enc[:AES.block_size]
+            hmac_digest = enc[-hmac_digest_size:]
+            ciphertext = enc[AES.block_size:-hmac_digest_size]
+        except IndexError:
+            raise DecryptionError()
 
         # Verify the HMAC before decrypting
         hmac_obj = hmac.new(self.key, msg=iv+ciphertext, digestmod='sha512')
@@ -61,14 +61,7 @@ class AESCipher(object):
         except UnicodeDecodeError:
             raise DecryptionError()
 
-        try:
-            magic = data[:len(_MAGIC)]
-            if magic != _MAGIC:
-                raise DecryptionError()
-        except IndexError:
-            raise DecryptionError()
-
-        return data[len(_MAGIC):]
+        return data
 
     def _pad(self, s):
         return (s + (self.bs - len(s) % self.bs) *
