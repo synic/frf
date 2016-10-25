@@ -18,12 +18,17 @@ class AESCipher(object):
     """
     def __init__(self, key=None):
         if not key:
-            key = str(uuid.uuid4())
+            # Get 32 bytes (256 bits) of data from /dev/urandom
+            key = Random.new().read(32)
+        if type(key) != bytes:
+            key = key.encode()
         self.bs = AES.block_size
-        self.key = hashlib.sha256(key.encode()).digest()
+        self.key = hashlib.sha256(key).digest()
 
     def _update_key(self, key):
-        self.key = hashlib.sha256(key.encode()).digest()
+        if type(key) != bytes:
+            key = key.encode()
+        self.key = hashlib.sha256(key).digest()
 
     def encrypt(self, raw):
         raw = self._pad(raw)
