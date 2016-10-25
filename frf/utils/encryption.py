@@ -1,11 +1,10 @@
 import uuid
 import hashlib
 import base64
+import hmac
 
 from Crypto import Random
 from Crypto.Cipher import AES
-
-_MAGIC = '__frf_encrypted'
 
 
 class DecryptionError(Exception):
@@ -27,31 +26,42 @@ class AESCipher(object):
         self.key = hashlib.sha256(key.encode()).digest()
 
     def encrypt(self, raw):
-        raw = '{}{}'.format(_MAGIC, raw)
         raw = self._pad(raw)
         iv = Random.new().read(AES.block_size)
         cipher = AES.new(self.key, AES.MODE_CBC, iv)
-        return base64.b64encode(iv + cipher.encrypt(raw))
+
+        ciphertext = cipher.encrypt(raw)
+        cipher_msg = iv + ciphertext
+        hmac_obj = hmac.new(self.key, msg=cipher_msg, digestmod='sha512')
+        hmac_digest = hmac_obj.digest()
+
+        return base64.b64encode(cipher_msg + hmac_digest)
 
     def decrypt(self, enc):
+        hmac_digest_size = hashlib.sha512().digest_size
         enc = base64.b64decode(enc)
-        iv = enc[:AES.block_size]
+
+        try:
+            iv = enc[:AES.block_size]
+            hmac_digest = enc[-hmac_digest_size:]
+            ciphertext = enc[AES.block_size:-hmac_digest_size]
+        except IndexError:
+            raise DecryptionError()
+
+        # Verify the HMAC before decrypting
+        hmac_obj = hmac.new(self.key, msg=iv+ciphertext, digestmod='sha512')
+        if not hmac.compare_digest(hmac_digest, hmac_obj.digest()):
+            raise DecryptionError('HMAC could not be verified')
+
         cipher = AES.new(self.key, AES.MODE_CBC, iv)
 
         try:
             data = self._unpad(
-                cipher.decrypt(enc[AES.block_size:])).decode('utf-8')
+                cipher.decrypt(ciphertext)).decode('utf-8')
         except UnicodeDecodeError:
             raise DecryptionError()
 
-        try:
-            magic = data[:len(_MAGIC)]
-            if magic != _MAGIC:
-                raise DecryptionError()
-        except IndexError:
-            raise DecryptionError()
-
-        return data[len(_MAGIC):]
+        return data
 
     def _pad(self, s):
         return (s + (self.bs - len(s) % self.bs) *
