@@ -1,4 +1,4 @@
-from frf import viewsets
+from frf import viewsets, permissions, views
 
 from frf.tests.fakemodule import serializers
 from frf.tests.fakemodule import models
@@ -25,3 +25,18 @@ class AuthorViewSet(viewsets.ModelViewSet):
 class BookViewSet(viewsets.ModelViewSet):
     model = models.Book
     serializer = serializers.BookSerialzier()
+
+
+class TestPermission(permissions.BasePermission):
+    def has_permission(self, req, view, **kwargs):
+        return req.method != 'POST'
+
+
+class TestView(views.View):
+    permissions = (TestPermission(), )
+
+    def get(self, req, resp, **kwargs):
+        return None
+
+    def post(self, req, resp, **kwargs):
+        return None

@@ -74,7 +74,7 @@ class ViewSet(views.View):
                     description='{} not passed for lookup'.format((
                         self.obj_lookup_kwarg)))
 
-        self.check_permissions(method, req, resp, **kwargs)
+        self.check_permissions(req, **kwargs)
 
         if mapped_method == 'list' and self.obj_lookup_kwarg in kwargs:
             mapped_method = 'retrieve'

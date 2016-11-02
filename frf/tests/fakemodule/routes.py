@@ -12,4 +12,5 @@ routes = [
     ('/books/{id}/', book_viewset),
     ('/authors/', author_viewset),
     ('/authors/{uuid1}/{uuid2}/', author_viewset),
+    ('/test_permissions_view/', viewsets.TestView()),
     ]

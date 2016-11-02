@@ -16,6 +16,7 @@ One you have followed the following steps, you should have a working blog api!
    firstmodule
    tryit
    authentication
+   permissions
    filters
    pagination
    renderers

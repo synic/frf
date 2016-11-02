@@ -46,7 +46,7 @@ Open up ``blog/viewsets.py`` and edit it to look like this:
 
     class AdminArticleViewSet(ArticleViewSet):
         allowed_actions = ('list', 'retrieve', 'update', 'create', 'delete')
-        authentication = [BasicAuthentication(authorize)]
+        authentication = (BasicAuthentication(authorize), )
 
         def create_pre_commit(self, req, obj, **kwargs):
             obj.author = req.context.get('user', 'unknown')
@@ -97,7 +97,7 @@ Add the PASSWORDS Setting
 -------------------------
 
 Let's add our ``PASSWORDS`` setting to the settings file.  Open up
-``blogapi/settings.py`` and add a line like the following:
+``blogapi/settings.py`` and add the following:
 
 .. code-block:: python
    :caption: settings.py
@@ -107,7 +107,7 @@ Let's add our ``PASSWORDS`` setting to the settings file.  Open up
         'adam': 'onetwo34',
     }
 
-Updates Routes
+Update Routes
 --------------
 
 Now we just need to tell the system about our new setting, so open up
@@ -122,10 +122,10 @@ Now we just need to tell the system about our new setting, so open up
     admin_article_viewset = viewsets.AdminArticleViewSet()
 
     routes = [
-        ('/api/blog/articles/', article_viewset),
-        ('/api/blog/articles/{uuid}/', article_viewset),
-        ('/api/admin/blog/articles/', admin_article_viewset),
-        ('/api/admin/blog/articles/{uuid}/', admin_article_viewset),
+        ('/blog/articles/', article_viewset),
+        ('/blog/articles/{uuid}/', article_viewset),
+        ('/admin/blog/articles/', admin_article_viewset),
+        ('/admin/blog/articles/{uuid}/', admin_article_viewset),
         ]
 
 Try it Out!

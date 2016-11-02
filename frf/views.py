@@ -52,7 +52,7 @@ class View(object):
             # no authentication on the class, so set the user to `None`
             req.context['user'] = None
 
-    def check_permissions(self, method, req, resp, **kwargs):
+    def check_permissions(self, req, **kwargs):
         """Check permissions.
 
         Will check the permissions classes in order.  The first one that fails
@@ -62,14 +62,8 @@ class View(object):
         """
         #: permissions
         if self.permissions:
-            user = req.context.get('user', None)
-            if not user:
-                raise falcon.HTTPUnauthorized(
-                    title='Not Authorized',
-                    description='No user is currently authenticated.',
-                    challenges='Token')
             for permission in self.permissions:
-                if not permission.has_permission(req, **kwargs):
+                if not permission.has_permission(req, self, **kwargs):
                     raise falcon.HTTPForbidden(
                         title='Forbidden',
                         description='You do not have permission to access '
@@ -86,7 +80,7 @@ class View(object):
                 allowed_methods=self.allowed_methods())
 
         self.authenticate(method, req, resp, **kwargs)
-        self.check_permissions(method, req, resp, **kwargs)
+        self.check_permissions(req, **kwargs)
 
         getattr(self, method)(req, resp, **kwargs)
         resp.content_type = 'application/json'
