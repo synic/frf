@@ -128,8 +128,8 @@ We need to tell FRF how to map what url to this new ViewSet.  Open
     article_viewset = viewsets.ArticleViewSet()
 
     routes = [
-        ('/api/blog/articles/', article_viewset),
-        ('/api/blog/articles/{uuid}/', article_viewset),
+        ('/blog/articles/', article_viewset),
+        ('/blog/articles/{uuid}/', article_viewset),
         ]
 
 Now we need to tell our app to use the blog routes.  Open ``blogapi/routes.py``
@@ -140,7 +140,9 @@ and edit it to look like this:
 
     from frf.routes import include, route  # noqa
 
-    routes = [include('blog.routes')]
+    routes = [
+      ('/api/', include('blog.routes')),
+    ]
 
 
 Start the Server

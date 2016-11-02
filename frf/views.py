@@ -48,6 +48,9 @@ class View(object):
                     challenges='Token')
             else:
                 req.context['user'] = user
+        else:
+            # no authentication on the class, so set the user to `None`
+            req.context['user'] = None
 
     def check_permissions(self, method, req, resp, **kwargs):
         """Check permissions.

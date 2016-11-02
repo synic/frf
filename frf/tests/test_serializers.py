@@ -416,7 +416,7 @@ class FakeProjectTestCase(BaseTestCase):
         db.session.commit()
 
     def test_index_companies(self):
-        res = self.simulate_get('/companies/')
+        res = self.simulate_get('/api/companies/')
         self.assertEqual(falcon.HTTP_200, res.status)
 
         json = res.json
@@ -450,7 +450,8 @@ class FakeProjectTestCase(BaseTestCase):
         }
 
         res = self.simulate_patch(
-            '/companies/{id}/'.format(id=c.id), body=serialize(update_data))
+            '/api/companies/{id}/'.format(id=c.id),
+            body=serialize(update_data))
 
         self.assertEqual(res.status, falcon.HTTP_204)
 
@@ -460,7 +461,7 @@ class FakeProjectTestCase(BaseTestCase):
         self.assertEqual(c.authors[0], self.adam)
 
     def test_index_books(self):
-        res = self.simulate_get('/books/')
+        res = self.simulate_get('/api/books/')
         self.assertEqual(falcon.HTTP_200, res.status)
 
         json = res.json
@@ -487,7 +488,7 @@ class FakeProjectTestCase(BaseTestCase):
         }
 
         res = self.simulate_post(
-            '/books/', body=serialize(create_data))
+            '/api/books/', body=serialize(create_data))
 
         self.assertEqual(res.status, falcon.HTTP_201)
 
@@ -497,7 +498,7 @@ class FakeProjectTestCase(BaseTestCase):
         self.assertEqual(author['uuid2'], str(self.ross.uuid2))
 
     def test_index_authors(self):
-        res = self.simulate_get('/authors/')
+        res = self.simulate_get('/api/authors/')
         self.assertEquals(falcon.HTTP_200, res.status)
 
         json = res.json
@@ -527,7 +528,7 @@ class FakeProjectTestCase(BaseTestCase):
             'books': [book.id],
         }
 
-        res = self.simulate_patch('/authors/{uuid1}/{uuid2}/'.format(
+        res = self.simulate_patch('/api/authors/{uuid1}/{uuid2}/'.format(
             uuid1=str(self.adam.uuid1),
             uuid2=str(self.adam.uuid2)), body=serialize(update_data))
 

@@ -7,14 +7,31 @@ ROUTE_REGISTRY = []
 
 
 class IncludeRoutes(list):
-    pass
+    def get_routelist(self, base_url):
+        """Return the routes, each prepended with ``base_url``."""
+        routes = []
+        for route in self:
+            if isinstance(route, (tuple, list)):
+                if not isinstance(route, IncludeRoutes):
+                    url = route[0]
+
+                    # here we are going to try and avoid two ``//`` in a row.
+                    if base_url.endswith('/') and url.startswith('/'):
+                        url = url[1:]
+
+                    routes.append(
+                        ('{}{}'.format(base_url, url), route[1]))
+                else:
+                    routes.append(route)
+
+        return routes
 
 
 class IncludeError(Exception):
     pass
 
 
-def include(routes):
+def include(module, route_name='routes'):
     """Include routes from a separate file.
 
     Usage:
@@ -32,21 +49,23 @@ def include(routes):
        ]
 
     Args:
-        include (str): The absolute path to the routes.  Can also be the routes
-            themselves.
+        module (str or object): The absolute path to the routes. Can also be
+            the routes themselves.
+        route_name (str): The name of the routes variable inside ``module``.
+           ``routes`` will be used if this is not specified.
     """
-    if isinstance(routes, str):
+    if isinstance(module, str):
         try:
-            module = importlib.import_module(routes)
-            routes_attr = getattr(module, 'routes', None)
+            module = importlib.import_module(module)
+            routes_attr = getattr(module, route_name, None)
             if not routes_attr:
                 logger.warning(
                     'Could not obtain routes from route module {}'.format(
-                        routes))
+                        module))
             return IncludeRoutes(routes_attr)
         except ImportError:
             logger.warning(
-                'Could not load routes from module {}'.format(routes))
+                'Could not load routes from module {}'.format(module))
             raise IncludeError()
     else:
-        return IncludeRoutes(routes)
+        return IncludeRoutes(module)

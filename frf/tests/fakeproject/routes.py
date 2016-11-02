@@ -2,5 +2,5 @@ from frf.routes import include
 
 
 routes = [
-    include('frf.tests.fakemodule.routes'),
+    ('/api/', include('frf.tests.fakemodule.routes')),
     ]

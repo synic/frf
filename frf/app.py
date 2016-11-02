@@ -50,6 +50,9 @@ def _flatten_routes(route_list, routes):
     for route in route_list:
         if isinstance(route, IncludeRoutes):
             _flatten_routes(route, routes)
+        elif isinstance(route[1], IncludeRoutes):
+            _flatten_routes(route[1].get_routelist(
+                base_url=route[0]), routes)
         else:
             routes.append(route)
 
