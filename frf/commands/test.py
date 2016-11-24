@@ -15,4 +15,4 @@ class Command(BaseCommand):
 
         sys.argv = sys.argv[1:]
 
-        pytest.main()
+        sys.exit(pytest.main())
