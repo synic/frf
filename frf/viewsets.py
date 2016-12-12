@@ -203,7 +203,7 @@ class ViewSet(views.View):
         obj = self.get_obj(req, **kwargs)
         resp.body = self.get_serializer(req, **kwargs).serialize(obj)
 
-    def update_pre_commit(self, req, obj, **kwargs):
+    def update_pre_save(self, req, obj, **kwargs):
         pass
 
     def update(self, req, resp, **kwargs):
@@ -229,7 +229,7 @@ class ViewSet(views.View):
     def update_save_obj(self, req, obj, **kwargs):
         raise NotImplementedError()
 
-    def create_pre_commit(self, req, obj, **kwargs):
+    def create_pre_save(self, req, obj, **kwargs):
         pass
 
     def create(self, req, resp, **kwargs):
@@ -306,7 +306,7 @@ class ModelViewSet(ViewSet):
         return self.model.query
 
     def update_save_obj(self, req, obj, **kwargs):
-        self.update_pre_commit(req, obj, **kwargs)
+        self.update_pre_save(req, obj, **kwargs)
 
         try:
             db.session.commit()
@@ -315,9 +315,10 @@ class ModelViewSet(ViewSet):
             raise
 
     def create_save_obj(self, req, obj, **kwargs):
-        self.create_pre_commit(req, obj, **kwargs)
+        self.create_pre_save(req, obj, **kwargs)
 
         db.session.add(obj)
+
         try:
             db.session.commit()
         except:

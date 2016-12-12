@@ -48,7 +48,7 @@ Open up ``blog/viewsets.py`` and edit it to look like this:
         allowed_actions = ('list', 'retrieve', 'update', 'create', 'delete')
         authentication = (BasicAuthentication(authorize), )
 
-        def create_pre_commit(self, req, obj, **kwargs):
+        def create_pre_save(self, req, obj, **kwargs):
             obj.author = req.context.get('user', 'unknown')
 
 
@@ -62,7 +62,7 @@ inherits from the first api.  It only changes a few things:
     This will decode the basic authentication header, and pass it to our newly
     defined ``authenticate`` function, which just checks the username and
     password against a new setting (that we will add soon) - ``PASSWORDS``.
-3.  Added the ``create_pre_commit`` that just assigns the currently logged in
+3.  Added the ``create_pre_save`` that just assigns the currently logged in
     user to the ``author`` field.
 
 
