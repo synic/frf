@@ -86,7 +86,7 @@ class Serializer(object):
             if attr_name.startswith('clean_') and callable(attr):
                 self.validators[attr_name[6:]] = attr
 
-    def validate(self, obj=None, data=None, **kwargs):
+    def validate(self, obj=None, data=None, ctx=None):
         """Validate data.
 
         Args:
@@ -94,15 +94,18 @@ class Serializer(object):
                 editing, otherwise, it will be None.  If specified, field
                 requirements will be lifted.
             data (dict): The data to validate.
-            **kwargs (dict): Any additional data you want to pass. Useful for
+            ctx (dict): Any additional data you want to pass. Useful for
                 serializer subclasses that want to have acccess to things like
                 the falcon Request object.
 
         Return:
            dict: The cleaned and validated data.
         """
-        if not data:
+        if data is None:
             data = {}
+
+        if ctx is None:
+            ctx = {}
 
         if not isinstance(data, dict):
             raise ValidationError(
@@ -137,27 +140,27 @@ class Serializer(object):
 
             # first run the field validation
             field_errors = field.validate(
-                obj=obj, value=value, data=data, **kwargs)
+                obj=obj, value=value, data=data, ctx=ctx)
 
             # if there is a serializer level validator for this
             # field...
             if field_name in self.validators:
                 try:
                     value = self.validators[field_name](
-                        obj=obj, data=data, **kwargs)
+                        obj=obj, data=data, ctx=ctx)
                 except ValidationError as error:
                     field_errors.append(error.description)
 
             if not field_errors:
                 cleaned_data[source_name] = field.to_python(
-                    obj=obj, value=value, **kwargs)
+                    obj=obj, data=data, value=value, ctx=ctx)
 
             if field_errors:
                 errors[field_name] = field_errors
 
         try:
             cleaned_data = self.clean(
-                obj=obj, data=data, cleaned_data=cleaned_data, **kwargs)
+                obj=obj, data=data, cleaned_data=cleaned_data, ctx=ctx)
         except ValidationError as error:
             errors['non_field_errors'] = error.message
 
@@ -166,10 +169,10 @@ class Serializer(object):
 
         return cleaned_data
 
-    def post_save(self, obj, data, cleaned_data, **kwargs):
+    def post_save(self, obj, data, cleaned_data, ctx=None):
         pass
 
-    def clean(self, obj, data, cleaned_data, **kwargs):
+    def clean(self, obj, data, cleaned_data, ctx=None):
         """Called after all other validation is done.
         Override if you want to perform any further validation or data
         scrubbing.
@@ -185,7 +188,7 @@ class Serializer(object):
         """
         return cleaned_data
 
-    def create(self, data, cleaned_data, **kwargs):
+    def create(self, data, cleaned_data, ctx=None):
         """Create the object.  Override if you want to change this behavior.
 
         Args:
@@ -200,16 +203,16 @@ class Serializer(object):
         obj = SerializerObject()
         return obj
 
-    def update(self, obj, data, cleaned_data, **kwargs):
-        self.save_fields(obj, data, cleaned_data, **kwargs)
+    def update(self, obj, data, cleaned_data, ctx=None):
+        self.save_fields(obj, data, cleaned_data, ctx=ctx)
 
-    def save_fields(self, obj, data, cleaned_data, **kwargs):
+    def save_fields(self, obj, data, cleaned_data, ctx=None):
         for key, value in cleaned_data.items():
             field = self.fields.get(key)
             if not field.write_only:
                 setattr(obj, key, value)
 
-    def save(self, obj=None, data=None, **kwargs):
+    def save(self, obj=None, data=None, ctx=None):
         """Save object using provided data.
 
         Args:
@@ -225,18 +228,21 @@ class Serializer(object):
                 any type of commit, that is the responsibility of the
                 developer.
         """
-        cleaned_data = self.validate(obj, data, **kwargs)
+        if ctx is None:
+            ctx = {}
+
+        cleaned_data = self.validate(obj, data, ctx=ctx)
         if not obj:
-            obj = self.create(data, cleaned_data, **kwargs)
-            self.save_fields(obj, data, cleaned_data, **kwargs)
-            self.post_save(obj, data, cleaned_data, **kwargs)
+            obj = self.create(data, cleaned_data, ctx=ctx)
+            self.save_fields(obj, data, cleaned_data, ctx=ctx)
+            self.post_save(obj, data, cleaned_data, ctx=ctx)
         else:
-            self.update(obj, data, cleaned_data, **kwargs)
-            self.post_save(obj, data, cleaned_data, **kwargs)
+            self.update(obj, data, cleaned_data, ctx=ctx)
+            self.post_save(obj, data, cleaned_data, ctx=ctx)
 
         return obj
 
-    def serialize(self, objs, many=False, **kwargs):
+    def serialize(self, objs, many=False, ctx=None):
         """Serialize an object or objects.
 
         Args:
@@ -247,6 +253,9 @@ class Serializer(object):
         Returns:
             dict: The serialized data.
         """
+        if ctx is None:
+            ctx = {}
+
         if not many:
             objs = [objs]
 
@@ -258,7 +267,7 @@ class Serializer(object):
                 source_name = field.source
                 value = getattr(obj, source_name, None)
                 serialized_obj[field_name] = field.to_data(
-                    obj=obj, value=value, **kwargs)
+                    obj=obj, value=value, ctx=ctx)
 
             serialized_objs.append(serialized_obj)
 
@@ -290,5 +299,5 @@ class ModelSerializer(Serializer):
             raise ValueError(_('You must specify a model.'))
         super().__init__()
 
-    def create(self, cleaned_data, obj, **kwargs):
+    def create(self, cleaned_data, obj, ctx=None):
         return self.Meta.model()

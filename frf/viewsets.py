@@ -211,6 +211,12 @@ class ViewSet(views.View):
 
         Requires that you have passed ``obj_lookup_kwarg`` in the url for
         lookup.
+
+        Args:
+            req (falcon.request.Request): The request object
+            resp (falcon.response.Response): The response object
+            commit (bool): Default ``True``.  For model-viewsets, set this to
+                ``False`` if you would like to commit yourself.
         """
         obj = self.get_obj(req, **kwargs)
         data = json.loads(req.stream.read().decode('utf-8'))
@@ -221,9 +227,11 @@ class ViewSet(views.View):
         req.context['json'] = data
 
         serializer = self.get_serializer(req, **kwargs)
-        serializer.save(obj=obj, data=data, req=req)
+        serializer.save(obj=obj, data=data, ctx={'req': req})
 
+        self.update_pre_save(req, obj, **kwargs)
         self.update_save_obj(req, obj, **kwargs)
+
         resp.status = falcon.HTTP_204
 
     def update_save_obj(self, req, obj, **kwargs):
@@ -237,6 +245,13 @@ class ViewSet(views.View):
 
         Called for a POST, it should create and save the object specified in
         the post body.
+
+        Args:
+            req (falcon.request.Request): The request object
+            resp (falcon.response.Response): The response object
+            commit (bool): Default ``True``. For :class:`ModelViewSet`
+                subclasses, set this to ``False`` if you would like to commit
+                yourself.
         """
         data = json.loads(req.stream.read().decode('utf-8'))
 
@@ -246,8 +261,9 @@ class ViewSet(views.View):
         req.context['json'] = data
 
         serializer = self.get_serializer(req, **kwargs)
-        obj = serializer.save(data=data, req=req)
+        obj = serializer.save(data=data, ctx={'req': req})
 
+        self.create_pre_save(req, obj, **kwargs)
         self.create_save_obj(req, obj, **kwargs)
 
         req.context['object'] = obj
@@ -266,11 +282,16 @@ class ViewSet(views.View):
 
         If you wish to change what happens when a delete occurs, override
         ``delete_remove_obj``.
+
+        Args:
+            req (falcon.request.Request): The request object
+            resp (falcon.response.Response): The response object
+            commit (bool): Default ``True``. For :class:`ModelViewSet`
+                subclasses, set this to ``False`` if you would like to commit
+                yourself.
         """
         obj = self.get_obj(req, **kwargs)
-
         self.delete_remove_obj(req, obj, **kwargs)
-
         resp.status = falcon.HTTP_204
 
 
@@ -306,8 +327,6 @@ class ModelViewSet(ViewSet):
         return self.model.query
 
     def update_save_obj(self, req, obj, **kwargs):
-        self.update_pre_save(req, obj, **kwargs)
-
         try:
             db.session.commit()
         except:
@@ -315,8 +334,6 @@ class ModelViewSet(ViewSet):
             raise
 
     def create_save_obj(self, req, obj, **kwargs):
-        self.create_pre_save(req, obj, **kwargs)
-
         db.session.add(obj)
 
         try:

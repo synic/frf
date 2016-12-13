@@ -34,7 +34,7 @@ class View(object):
         method.  If one passes, that one will be used.  If none pass, a
         forbidden response will be returned.
         """
-        #: authentication
+        # authentication
         user = None
         if self.authentication:
             for auth_method in self.authentication:
@@ -74,6 +74,10 @@ class View(object):
 
         Also runs through the permissions (if there are any) and checks them
         against the current user.
+
+        Args:
+            method (str): The HTTP method, can be one of ``get``, ``put``,
+                ``patch``, ``post``, ``delete``.
         """
         if method not in self.allowed_methods:
             raise falcon.HTTPMethodNotAllowed(
