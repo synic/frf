@@ -1,3 +1,22 @@
+# Copyright 2016 by Teem, and other contributors,
+# as noted in the individual source code files.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+#
+# By contributing to this project, you agree to also license your source
+# code under the terms of the Apache License, Version 2.0, as described
+# above.
+
 import falcon
 
 
@@ -34,7 +53,7 @@ class View(object):
         method.  If one passes, that one will be used.  If none pass, a
         forbidden response will be returned.
         """
-        #: authentication
+        # authentication
         user = None
         if self.authentication:
             for auth_method in self.authentication:
@@ -74,6 +93,10 @@ class View(object):
 
         Also runs through the permissions (if there are any) and checks them
         against the current user.
+
+        Args:
+            method (str): The HTTP method, can be one of ``get``, ``put``,
+                ``patch``, ``post``, ``delete``.
         """
         if method not in self.allowed_methods:
             raise falcon.HTTPMethodNotAllowed(

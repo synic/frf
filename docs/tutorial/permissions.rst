@@ -82,7 +82,7 @@ Let's add this new permission to the admin viewset.  Open up
         authentication = (BasicAuthentication(authorize), )
         permissions = (permissions.HasEditPermission(), )
 
-        def create_pre_commit(self, req, obj, **kwargs):
+        def create_pre_save(self, req, obj, **kwargs):
             obj.author = req.context.get('user', 'unknown')
 
 

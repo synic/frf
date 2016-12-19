@@ -1,3 +1,22 @@
+# Copyright 2016 by Teem, and other contributors,
+# as noted in the individual source code files.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+#
+# By contributing to this project, you agree to also license your source
+# code under the terms of the Apache License, Version 2.0, as described
+# above.
+
 import json
 import falcon
 from gettext import gettext as _
@@ -203,7 +222,7 @@ class ViewSet(views.View):
         obj = self.get_obj(req, **kwargs)
         resp.body = self.get_serializer(req, **kwargs).serialize(obj)
 
-    def update_pre_commit(self, req, obj, **kwargs):
+    def update_pre_save(self, req, obj, **kwargs):
         pass
 
     def update(self, req, resp, **kwargs):
@@ -211,6 +230,12 @@ class ViewSet(views.View):
 
         Requires that you have passed ``obj_lookup_kwarg`` in the url for
         lookup.
+
+        Args:
+            req (falcon.request.Request): The request object
+            resp (falcon.response.Response): The response object
+            commit (bool): Default ``True``.  For model-viewsets, set this to
+                ``False`` if you would like to commit yourself.
         """
         obj = self.get_obj(req, **kwargs)
         data = json.loads(req.stream.read().decode('utf-8'))
@@ -221,15 +246,17 @@ class ViewSet(views.View):
         req.context['json'] = data
 
         serializer = self.get_serializer(req, **kwargs)
-        serializer.save(obj=obj, data=data, req=req)
+        serializer.save(obj=obj, data=data, ctx={'req': req})
 
+        self.update_pre_save(req, obj, **kwargs)
         self.update_save_obj(req, obj, **kwargs)
+
         resp.status = falcon.HTTP_204
 
     def update_save_obj(self, req, obj, **kwargs):
         raise NotImplementedError()
 
-    def create_pre_commit(self, req, obj, **kwargs):
+    def create_pre_save(self, req, obj, **kwargs):
         pass
 
     def create(self, req, resp, **kwargs):
@@ -237,6 +264,13 @@ class ViewSet(views.View):
 
         Called for a POST, it should create and save the object specified in
         the post body.
+
+        Args:
+            req (falcon.request.Request): The request object
+            resp (falcon.response.Response): The response object
+            commit (bool): Default ``True``. For :class:`ModelViewSet`
+                subclasses, set this to ``False`` if you would like to commit
+                yourself.
         """
         data = json.loads(req.stream.read().decode('utf-8'))
 
@@ -246,8 +280,9 @@ class ViewSet(views.View):
         req.context['json'] = data
 
         serializer = self.get_serializer(req, **kwargs)
-        obj = serializer.save(data=data, req=req)
+        obj = serializer.save(data=data, ctx={'req': req})
 
+        self.create_pre_save(req, obj, **kwargs)
         self.create_save_obj(req, obj, **kwargs)
 
         req.context['object'] = obj
@@ -266,11 +301,16 @@ class ViewSet(views.View):
 
         If you wish to change what happens when a delete occurs, override
         ``delete_remove_obj``.
+
+        Args:
+            req (falcon.request.Request): The request object
+            resp (falcon.response.Response): The response object
+            commit (bool): Default ``True``. For :class:`ModelViewSet`
+                subclasses, set this to ``False`` if you would like to commit
+                yourself.
         """
         obj = self.get_obj(req, **kwargs)
-
         self.delete_remove_obj(req, obj, **kwargs)
-
         resp.status = falcon.HTTP_204
 
 
@@ -306,8 +346,6 @@ class ModelViewSet(ViewSet):
         return self.model.query
 
     def update_save_obj(self, req, obj, **kwargs):
-        self.update_pre_commit(req, obj, **kwargs)
-
         try:
             db.session.commit()
         except:
@@ -315,9 +353,8 @@ class ModelViewSet(ViewSet):
             raise
 
     def create_save_obj(self, req, obj, **kwargs):
-        self.create_pre_commit(req, obj, **kwargs)
-
         db.session.add(obj)
+
         try:
             db.session.commit()
         except:

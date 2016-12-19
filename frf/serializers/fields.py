@@ -1,3 +1,22 @@
+# Copyright 2016 by Teem, and other contributors,
+# as noted in the individual source code files.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+#
+# By contributing to this project, you agree to also license your source
+# code under the terms of the Apache License, Version 2.0, as described
+# above.
+
 import json
 import datetime
 import dateutil.parser
@@ -77,7 +96,7 @@ class Field(object):
             if attr_name.startswith('validate_') and callable(attr):
                 self.validators.append(attr)
 
-    def validate_choices(self, obj, value, **kwargs):
+    def validate_choices(self, obj, data, value, ctx=None):
         if self.choices:
             if value not in self.choices:
                 raise exceptions.ValidationError(
@@ -85,48 +104,50 @@ class Field(object):
                         value=value,
                         choices=', '.join(self.choices))))
 
-    def validate_required(self, obj, data, value, **kwargs):
+    def validate_required(self, obj, data, value, ctx=None):
         if not obj and self.required and self.field_name not in data:
             raise exceptions.ValidationError(
                 _('Field is required.'))
 
-    def validate_read_only(self, obj, data, value, **kwargs):
+    def validate_read_only(self, obj, data, value, ctx=None):
         if self.field_name in data and self.read_only:
             raise exceptions.ValidationError(
                 _('Field is read-only.'))
 
-    def validate_update_read_only(self, obj, data, value, **kwargs):
-        try:
-            value = self.to_python(obj=obj, data=data, value=value, **kwargs)
-        except exceptions.ValidationError:
+    def validate_allow_none(self, obj, data, value, ctx=None):
+        if self.required and not self.allow_none and value is None:
             raise exceptions.ValidationError(
-                _('Field is read-only when editing.'))
+                _('Field cannot be null.'))
+
+    def validate_update_read_only(self, obj, data, value, ctx=None):
+        value = self.to_python(obj=obj, data=data, value=value, ctx=ctx)
 
         if self.update_read_only and self.field_name in data and obj and \
                 getattr(obj, self.field_name) != value:
             raise exceptions.ValidationError(
                 _('Field is read-only when editing.'))
 
-    def validate_allow_none(self, value, **kwargs):
-        if self.required and not self.allow_none and value is None:
-            raise exceptions.ValidationError(
-                _('Field cannot be null.'))
-
-    def validate(self, obj=None, value=None, data=None, **kwargs):
+    def validate(self, obj, value, data=None, ctx=None):
         errors = []
+
+        if data is None:
+            data = {}
+
+        if ctx is None:
+            ctx = {}
 
         for validator in self.validators:
             try:
-                validator(obj=obj, value=value, data=data, **kwargs)
+                validator(obj=obj, value=value, data=data, ctx=ctx)
             except exceptions.ValidationError as error:
                 errors.append(error.description)
 
         return errors
 
-    def to_python(self, obj, value, **kwargs):
+    def to_python(self, obj, data, value, ctx=None):
         return value
 
-    def to_data(self, obj, value, **kwargs):
+    def to_data(self, obj, value, ctx=None):
         return value
 
 
@@ -157,7 +178,7 @@ class StringField(Field):
         self.regex = regex
         super().__init__(**kwargs)
 
-    def to_python(self, obj, value, **kwargs):
+    def to_python(self, obj, data, value, ctx=None):
         if self.allow_none and value is None:
             return value
 
@@ -168,32 +189,32 @@ class StringField(Field):
             value = value.strip()
         return value
 
-    def validate_allow_blank(self, value, **kwargs):
+    def validate_allow_blank(self, obj, data, value, ctx=None):
         if not self.allow_blank and value == '':
             raise exceptions.ValidationError(_('Cannot be blank.'))
 
-    def validate_is_string(self, obj, value, **kwargs):
+    def validate_is_string(self, obj, data, value, ctx=None):
         if self.allow_none and value is None:
             return value
 
         if not isinstance(value, str):
             raise exceptions.ValidationError(_('Must be a string.'))
 
-    def validate_min_length(self, obj, value, **kwargs):
+    def validate_min_length(self, obj, data, value, ctx=None):
         value = str(value)
         if self.min_length and len(value) < self.min_length:
             raise exceptions.ValidationError(
                 _('Must be at least {chars} '
                   'character(s) long.'.format(chars=self.min_length)))
 
-    def validate_max_length(self, obj, value, **kwargs):
+    def validate_max_length(self, obj, data, value, ctx=None):
         value = str(value)
         if self.max_length and len(value) > self.max_length:
             raise exceptions.ValidationError(
                 _('Must be at most {chars} character(s) long.'.format(
                     chars=self.max_length)))
 
-    def validate_regex(self, obj, value, **kwargs):
+    def validate_regex(self, obj, data, value, ctx=None):
         if self.allow_none and value is None:
             return value
         if self.regex:
@@ -230,12 +251,12 @@ class EmailField(StringField):
         self.convert_to_lower = convert_to_lower
         super().__init__(regex=self.REGEX, **kwargs)
 
-    def to_python(self, obj, value, **kwargs):
+    def to_python(self, obj, data, value, ctx=None):
         if isinstance(value, str) and self.convert_to_lower:
             return value.lower()
         return value
 
-    def validate_regex(self, obj, value, **kwargs):
+    def validate_regex(self, obj, data, value, ctx=None):
         if isinstance(value, str) and self.regex:
             if not self.regex.match(value):
                 raise exceptions.ValidationError(
@@ -257,7 +278,7 @@ class IntField(Field):
         self.max_value = max_value
         super().__init__(**kwargs)
 
-    def validate_is_int(self, obj, value, **kwargs):
+    def validate_is_int(self, obj, data, value, ctx=None):
         if self.allow_none and value is None:
             return value
 
@@ -266,14 +287,14 @@ class IntField(Field):
                 _('"{number}" does not appear to be an integer.'.format(
                     number=value)))
 
-    def validate_min_value(self, value, **kwargs):
+    def validate_min_value(self, obj, data, value, ctx=None):
         if isinstance(value, int) and self.min_value is not None \
                 and value < self.min_value:
             raise exceptions.ValidationError(
                 _('Value cannot be smaller than {value}.'.format(
                     value=self.min_value)))
 
-    def validate_max_value(self, value, **kwargs):
+    def validate_max_value(self, obj, data, value, ctx=None):
         if isinstance(value, int) and self.max_value is not None \
                  and value > self.max_value:
             raise exceptions.ValidationError(
@@ -283,7 +304,7 @@ class IntField(Field):
 
 class BooleanField(Field):
     """Boolean type field."""
-    def validate_boolean(self, obj, value, **kwargs):
+    def validate_boolean(self, obj, value, data, ctx=None):
         if not isinstance(value, bool):
             raise exceptions.ValidationError(_('Must be a boolean.'))
 
@@ -311,7 +332,7 @@ class ISODateTimeField(Field):
     >>> d == now
     True
     """
-    def validate_datetime(self, obj, value, **kwargs):
+    def validate_datetime(self, obj, data, value, ctx=None):
         if isinstance(value, datetime.datetime):
             return
         try:
@@ -320,7 +341,7 @@ class ISODateTimeField(Field):
             raise exceptions.ValidationError(
                 _('Error converting datetime: {message}'.format(message=e)))
 
-    def to_python(self, obj, value, **kwargs):
+    def to_python(self, obj, data, value, ctx=None):
         if self.allow_none and value is None:
             return value
 
@@ -328,13 +349,13 @@ class ISODateTimeField(Field):
             return value
         return dateutil.parser.parse(value)
 
-    def to_data(self, obj, value):
+    def to_data(self, obj, value, ctx=None):
         return value.isoformat()
 
 
 class UUIDField(Field):
     """Universally Unique Identifier field."""
-    def validate_uuid(self, obj, value, **kwargs):
+    def validate_uuid(self, obj, data, value, ctx=None):
         if isinstance(value, uuid.UUID):
             return
         try:
@@ -343,12 +364,12 @@ class UUIDField(Field):
             raise exceptions.ValidationError(
                 _('Error converting uuid: {message}'.format(message=e)))
 
-    def to_python(self, obj, value, **kwargs):
+    def to_python(self, obj, data, value, ctx=None):
         if value is not None and not isinstance(value, uuid.UUID):
             return uuid.UUID(value)
         return value
 
-    def to_data(self, obj, value):
+    def to_data(self, obj, value, ctx=None):
         return str(value)
 
 
@@ -376,32 +397,33 @@ class ListField(Field):
 
     field_name = property(get_field_name, set_field_name)
 
-    def validate_is_list(self, obj, value, **kwargs):
+    def validate_is_list(self, obj, data, value, ctx=None):
         if self.allow_none and value is None:
             return value
         if not isinstance(value, list):
             raise exceptions.ValidationError(
                 _('Value must be a list.'))
 
-    def validate_field(self, obj=None, value=None, data=None, **kwargs):
+    def validate_field(self, obj, data, value, ctx=None):
         errors = []
 
         for item in value:
             field_errors = self.field.validate(
-                data=data, obj=obj, value=item, **kwargs)
+                data=data, obj=obj, value=item, ctx=ctx)
             if field_errors:
                 errors += [i for i in [e for e in field_errors]]
 
         if errors:
             raise exceptions.ValidationError(errors[0])
 
-    def to_python(self, obj, value, **kwargs):
+    def to_python(self, obj, data, value, ctx=None):
         if self.allow_none and value is None:
             return value
         ret = []
 
         for item in value:
-            ret.append(self.field.to_python(obj=obj, value=item, **kwargs))
+            ret.append(self.field.to_python(
+                obj=obj, data=data, value=item, ctx=ctx))
 
         return ret
 
@@ -423,7 +445,7 @@ class JSONField(Field):
         self.many = many
         super().__init__(**kwargs)
 
-    def validate_structure(self, value, **kwargs):
+    def validate_structure(self, obj, data, value, ctx=None):
         if self.allow_none and value is None:
             return value
         if isinstance(value, str):
@@ -436,7 +458,7 @@ class JSONField(Field):
         if self.many and not isinstance(value, (list, tuple)):
             raise exceptions.ValidationError(_('Must be a list.'))
 
-    def validate_fields(self, obj=None, value=None, data=None, **kwargs):
+    def validate_fields(self, obj, data, value, ctx=None):
         if isinstance(value, str):
             value = deserialize(value)
 
@@ -444,22 +466,23 @@ class JSONField(Field):
             if self.many:
                 for item in value:
                     self.validator.validate(
-                        obj=obj, data=item, **kwargs)
+                        obj=obj, data=item, ctx=ctx)
             else:
                 self.validator.validate(
-                    obj=obj, data=value, **kwargs)
+                    obj=obj, data=value, ctx=ctx)
 
-    def to_python(self, value=None, **kwargs):
+    def to_python(self, obj, data, value, ctx=None):
         if isinstance(value, str):
             value = deserialize(value)
 
         items = []
 
         if self.validator:
-            if self.many and value:
-                for item in value:
-                    items.append(
-                        self.validator.validate(data=item))
+            if self.many:
+                if value:
+                    for item in value:
+                        items.append(
+                            self.validator.validate(data=item))
             else:
                 items.append(self.validator.validate(data=value))
         else:
@@ -467,7 +490,7 @@ class JSONField(Field):
 
         return items if self.many else items[0]
 
-    def to_data(self, value, **kwargs):
+    def to_data(self, obj, value, ctx=None):
         if isinstance(value, str):
             value = deserialize(value)
 
@@ -487,7 +510,10 @@ class SerializerField(Field):
         self.many = many
         super().__init__(**kwargs)
 
-    def validate(self, obj=None, value=None, data=None, **kwargs):
+    def validate(self, obj, data, value, ctx=None):
+        if ctx is None:
+            ctx = {}
+
         errors = []
         if isinstance(value, str):
             try:
@@ -503,20 +529,20 @@ class SerializerField(Field):
         if not self.many:
             try:
                 self.serializer.validate(
-                    obj=obj, data=value, **kwargs)
+                    obj=obj, data=value, ctx=ctx)
             except exceptions.ValidationError as exception:
                 errors.append(exception.description)
         else:
             for item in value:
                 try:
-                    self.serializer.validate(obj=obj, data=item, **kwargs)
+                    self.serializer.validate(obj=obj, data=item, ctx=ctx)
                 except exceptions.ValidationError as exception:
                     errors.append(exception.description)
 
         if errors:
             raise exceptions.ValidationError(errors)
 
-    def to_data(self, value, **kwargs):
+    def to_data(self, obj, value, ctx=None):
         items = []
 
         if self.many:
@@ -527,7 +553,7 @@ class SerializerField(Field):
 
         return items if self.many else items[0]
 
-    def to_python(self, obj=None, value=None, data=None, **kwargs):
+    def to_python(self, obj, data, value, ctx=None):
         items = []
         if isinstance(value, str):
             value = deserialize(value)
@@ -535,9 +561,9 @@ class SerializerField(Field):
         if self.many:
             for item in value:
                 items.append(
-                    self.serializer.save(obj=obj, data=item, **kwargs))
+                    self.serializer.save(obj=obj, data=item, ctx=ctx))
         else:
-            items.append(self.serializer.save(obj=obj, data=value, **kwargs))
+            items.append(self.serializer.save(obj=obj, data=value, ctx=ctx))
 
         return items if self.many else items[0]
 
@@ -605,7 +631,7 @@ class PrimaryKeyRelatedField(Field):
 
         return keys[0] if len(keys) == 1 else keys
 
-    def to_data(self, value, **kwargs):
+    def to_data(self, obj, value, ctx=None):
         keys = self.get_primary_keys()
 
         if not isinstance(keys, (list, tuple)):
@@ -640,7 +666,7 @@ class PrimaryKeyRelatedField(Field):
 
         return values
 
-    def get_items_many(self, value, validate=False, **kwargs):
+    def get_items_many(self, value, validate=False, ctx=None):
         """Create a list of referenced items.
 
         Args:
@@ -669,7 +695,7 @@ class PrimaryKeyRelatedField(Field):
                         **self.build_lookup(keys, item)).first())
         return items
 
-    def get_item_single(self, value, validate=False, **kwargs):
+    def get_item_single(self, value, validate=False, ctx=None):
         """Get a single referenced item.
 
         Args:
@@ -694,12 +720,12 @@ class PrimaryKeyRelatedField(Field):
 
         return item
 
-    def to_python(self, value, **kwargs):
+    def to_python(self, obj, data, value, ctx=None):
         if value:
             if self.many:
-                value = self.get_items_many(value, **kwargs)
+                value = self.get_items_many(value, ctx=ctx)
             else:
-                value = self.get_item_single(value, **kwargs)
+                value = self.get_item_single(value, ctx=ctx)
 
         return value
 
@@ -714,15 +740,15 @@ class PrimaryKeyRelatedField(Field):
 
         return lookup
 
-    def validate_ids(self, value, **kwargs):
+    def validate_ids(self, obj, data, value, ctx=None):
         keys = self.get_primary_keys()
         retval = None
 
         if value:
             if self.many:
-                retval = self.get_items_many(value, validate=True, **kwargs)
+                retval = self.get_items_many(value, validate=True, ctx=ctx)
             else:
-                retval = self.get_item_single(value, validate=True, **kwargs)
+                retval = self.get_item_single(value, validate=True, ctx=ctx)
 
         if not retval and value:
             raise exceptions.ValidationError(

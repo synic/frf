@@ -41,7 +41,7 @@ Open up ``blog/viewsets.py`` and edit it to look like this:
         allowed_actions = ('list', 'retrieve', 'update', 'create', 'delete')
         authentication = [BasicAuthentication(authorize)]
 
-        def create_pre_commit(self, req, obj, **kwargs):
+        def create_pre_save(self, req, obj, **kwargs):
             obj.author = req.context.get('user', 'unknown')
 
 
@@ -99,7 +99,7 @@ query string. Again, open up ``blog/viewsets.py`` and edit it to look like this:
         allowed_actions = ('list', 'retrieve', 'update', 'create', 'delete')
         authentication = [BasicAuthentication(authorize)]
 
-        def create_pre_commit(self, req, obj, **kwargs):
+        def create_pre_save(self, req, obj, **kwargs):
             obj.author = req.context.get('user', 'unknown')
 
 
