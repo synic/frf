@@ -264,8 +264,8 @@ class EmailField(StringField):
                       'email address.'.format(email=value)))
 
 
-class IntField(Field):
-    """Integer type field."""
+class NumberField(Field):
+    """Base number type field."""
     def __init__(self, min_value=None, max_value=None, **kwargs):
         """
         Args:
@@ -277,15 +277,6 @@ class IntField(Field):
         self.min_value = min_value
         self.max_value = max_value
         super().__init__(**kwargs)
-
-    def validate_is_int(self, obj, data, value, ctx=None):
-        if self.allow_none and value is None:
-            return value
-
-        if not isinstance(value, int):
-            raise exceptions.ValidationError(
-                _('"{number}" does not appear to be an integer.'.format(
-                    number=value)))
 
     def validate_min_value(self, obj, data, value, ctx=None):
         if isinstance(value, int) and self.min_value is not None \
@@ -302,11 +293,74 @@ class IntField(Field):
                     value=self.max_value)))
 
 
+class IntField(NumberField):
+    """Integer type field."""
+    def validate_is_int(self, obj, data, value, ctx=None):
+        if self.allow_none and value is None:
+            return value
+
+        if not isinstance(value, int):
+            raise exceptions.ValidationError(
+                _('"{number}" does not appear to be an integer.'.format(
+                    number=value)))
+
+
+class FloatField(NumberField):
+    """Float type field."""
+
+    def validate_is_float(self, obj, data, value, ctx=None):
+        if self.allow_none and value is None:
+            return value
+
+        if not isinstance(value, float):
+            raise exceptions.ValidationError(
+                _('"{number}" does not appear to be a float.'.format(
+                    number=value)))
+
+
 class BooleanField(Field):
     """Boolean type field."""
     def validate_boolean(self, obj, value, data, ctx=None):
         if not isinstance(value, bool):
             raise exceptions.ValidationError(_('Must be a boolean.'))
+
+
+class DateField(Field):
+    """Date field.
+
+    Uses the standard ``YYYY-MM-DD`` format.
+    """
+    def validate_date(self, obj, data, value, ctx=None):
+        if isinstance(value, datetime.date):
+            return
+
+        if isinstance(value, str):
+            parts = value.split('-')
+
+            try:
+                datetime.date(*parts)
+            except (TypeError, ValueError):
+                raise exceptions.ValidationError(
+                    _('"{datestr}" does not appear'
+                      'to be in the format "YYYY-MM-DD".').format(value))
+        else:
+            raise exceptions.ValidationError(
+                _('"{datestr}" is not a valid date.').format(value))
+
+    def to_python(self, obj, data, value, ctx=None):
+        if self.allow_none and value is None:
+            return value
+
+        if isinstance(value, datetime.date):
+            return value
+
+        return datetime.date(**value.split('-'))
+
+    def to_data(self, obj, value, ctx=None):
+        if not value:
+            return value
+
+        return value.strftime('%Y-%m-%d')
 
 
 class ISODateTimeField(Field):
@@ -350,6 +404,8 @@ class ISODateTimeField(Field):
         return dateutil.parser.parse(value)
 
     def to_data(self, obj, value, ctx=None):
+        if not value:
+            return value
         return value.isoformat()
 
 
@@ -370,6 +426,8 @@ class UUIDField(Field):
         return value
 
     def to_data(self, obj, value, ctx=None):
+        if not value:
+            return value
         return str(value)
 
 
