@@ -256,7 +256,7 @@ class TestCase(unittest.TestCase):
     def test_validation_order(self):
         serializer = new_serializer_class(
             name=serializers.StringField(
-                min_length=4, max_length=2, allow_blank=False, regex='\d\d'),
+                min_length=4, max_length=2, blank=False, regex='\d\d'),
             )
 
         with self.assertRaises(exceptions.ValidationError) as context:
@@ -344,11 +344,11 @@ class TestCase(unittest.TestCase):
 
         credentials = new_serializer_class(
             username=serializers.StringField(
-                required=True, allow_blank=False, allow_none=False),
+                required=True, blank=False, nullable=False),
             password=serializers.StringField(
-                required=True, allow_blank=False, allow_none=False),
+                required=True, blank=False, nullable=False),
             settings=serializers.JSONField(
-                validator=settings, default={}, allow_none=True),
+                validator=settings, default={}, nullable=True),
             )
 
         serializer = new_serializer_class(
@@ -366,9 +366,9 @@ class TestCase(unittest.TestCase):
         self.assertEqual(obj.credentials.password, 'test')
         self.assertTrue(obj.credentials.settings['stay_logged_in'])
 
-    def test_validate_allow_none(self):
+    def test_validate_nullable(self):
         serializer = new_serializer_class(
-            name=serializers.StringField(required=True, allow_none=True),
+            name=serializers.StringField(required=True, nullable=True),
             )
 
         obj = serializer.save(data={'name': None})

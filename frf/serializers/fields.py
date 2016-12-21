@@ -53,7 +53,7 @@ class Field(object):
 
     def __init__(self, required=False, default=None,
                  read_only=False, update_read_only=False, write_only=False,
-                 allow_none=None, choices=None, source=None, _debug=None):
+                 nullable=None, choices=None, source=None, _debug=None):
         """Initialize the field.
 
         Args:
@@ -68,7 +68,7 @@ class Field(object):
                 be read-only during an update or edit.
             write_only (bool): Set to True if you only want this field to be
                 used during deserialization and not serialization.
-            allow_none (bool): Allow 'None' to be passed for this field.  If
+            nullable (bool): Allow 'None' to be passed for this field.  If
                 you do not specify, it will be the opposite of the `required`
                 param.
             choices (list): If passed, during validation, the system will check
@@ -83,10 +83,10 @@ class Field(object):
         self.write_only = write_only
         self.update_read_only = update_read_only
 
-        if allow_none is None:
-            allow_none = not required
+        if nullable is None:
+            nullable = not required
 
-        self.allow_none = allow_none
+        self.nullable = nullable
         self.field_name = None
         self.source = source
         self._debug = _debug
@@ -114,8 +114,8 @@ class Field(object):
             raise exceptions.ValidationError(
                 _('Field is read-only.'))
 
-    def validate_allow_none(self, obj, data, value, ctx=None):
-        if self.required and not self.allow_none and value is None:
+    def validate_nullable(self, obj, data, value, ctx=None):
+        if self.required and not self.nullable and value is None:
             raise exceptions.ValidationError(
                 _('Field cannot be null.'))
 
@@ -154,7 +154,7 @@ class Field(object):
 class StringField(Field):
     """String type field."""
     def __init__(self, min_length=None, max_length=None, trim_whitespace=True,
-                 regex=None, allow_blank=True, **kwargs):
+                 regex=None, blank=True, **kwargs):
         """
         Args:
             min_length (int): Minumum length for the string.  If not passed, no
@@ -164,13 +164,13 @@ class StringField(Field):
                 clean any leading or trailing whitespace.   Default is *True*
             regex (str): Regular expression to match.  Leave blank for no
                 matching.
-            allow_blank (bool): Similar to *allow_none*, but applies to an
+            blank (bool): Similar to *nullable*, but applies to an
                 empty string.
         """
         self.min_length = min_length
         self.max_length = max_length
         self.trim_whitespace = trim_whitespace
-        self.allow_blank = allow_blank
+        self.blank = blank
 
         if isinstance(regex, str):
             regex = re.compile(regex)
@@ -179,7 +179,7 @@ class StringField(Field):
         super().__init__(**kwargs)
 
     def to_python(self, obj, data, value, ctx=None):
-        if self.allow_none and value is None:
+        if self.nullable and value is None:
             return value
 
         if not isinstance(value, str):
@@ -189,12 +189,12 @@ class StringField(Field):
             value = value.strip()
         return value
 
-    def validate_allow_blank(self, obj, data, value, ctx=None):
-        if not self.allow_blank and value == '':
+    def validate_blank(self, obj, data, value, ctx=None):
+        if not self.blank and value == '':
             raise exceptions.ValidationError(_('Cannot be blank.'))
 
     def validate_is_string(self, obj, data, value, ctx=None):
-        if self.allow_none and value is None:
+        if self.nullable and value is None:
             return value
 
         if not isinstance(value, str):
@@ -215,7 +215,7 @@ class StringField(Field):
                     chars=self.max_length)))
 
     def validate_regex(self, obj, data, value, ctx=None):
-        if self.allow_none and value is None:
+        if self.nullable and value is None:
             return value
         if self.regex:
             if not self.regex.match(value):
@@ -296,7 +296,7 @@ class NumberField(Field):
 class IntField(NumberField):
     """Integer type field."""
     def validate_is_int(self, obj, data, value, ctx=None):
-        if self.allow_none and value is None:
+        if self.nullable and value is None:
             return value
 
         if not isinstance(value, int):
@@ -309,7 +309,7 @@ class FloatField(NumberField):
     """Float type field."""
 
     def validate_is_float(self, obj, data, value, ctx=None):
-        if self.allow_none and value is None:
+        if self.nullable and value is None:
             return value
 
         if not isinstance(value, float):
@@ -348,7 +348,7 @@ class DateField(Field):
                 _('"{datestr}" is not a valid date.').format(value))
 
     def to_python(self, obj, data, value, ctx=None):
-        if self.allow_none and value is None:
+        if self.nullable and value is None:
             return value
 
         if isinstance(value, datetime.date):
@@ -396,7 +396,7 @@ class ISODateTimeField(Field):
                 _('Error converting datetime: {message}'.format(message=e)))
 
     def to_python(self, obj, data, value, ctx=None):
-        if self.allow_none and value is None:
+        if self.nullable and value is None:
             return value
 
         if isinstance(value, datetime.datetime):
@@ -456,7 +456,7 @@ class ListField(Field):
     field_name = property(get_field_name, set_field_name)
 
     def validate_is_list(self, obj, data, value, ctx=None):
-        if self.allow_none and value is None:
+        if self.nullable and value is None:
             return value
         if not isinstance(value, list):
             raise exceptions.ValidationError(
@@ -475,7 +475,7 @@ class ListField(Field):
             raise exceptions.ValidationError(errors[0])
 
     def to_python(self, obj, data, value, ctx=None):
-        if self.allow_none and value is None:
+        if self.nullable and value is None:
             return value
         ret = []
 
@@ -504,7 +504,7 @@ class JSONField(Field):
         super().__init__(**kwargs)
 
     def validate_structure(self, obj, data, value, ctx=None):
-        if self.allow_none and value is None:
+        if self.nullable and value is None:
             return value
         if isinstance(value, str):
             try:

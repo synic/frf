@@ -25,7 +25,7 @@ from frf.serializers import fields
 
 def string_converter(field):
     return fields.StringField(
-        min_length=0, max_length=field.type.length, allow_blank=field.nullable)
+        min_length=0, max_length=field.type.length, blank=field.nullable)
 
 
 def isodatetime_converter(field):
@@ -90,7 +90,7 @@ def table_fields(serializer, model):
         if type(column.type) in CONVERTER_MAP:
             field = CONVERTER_MAP[type(column.type)](column)
             field.required = False
-            field.allow_none = column.nullable
+            field.nullable = column.nullable
             field.source = attr_name
             field.field_name = attr_name
             field._serializer = serializer
