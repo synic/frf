@@ -23,34 +23,29 @@ from frf.tests.fakemodule import models
 
 
 class CompanySerializer(serializers.ModelSerializer):
-    id = serializers.IntField()
-    name = serializers.StringField()
     authors = serializers.PrimaryKeyRelatedField(
         model=models.Author, many=True)
 
     class Meta:
-        model = models.Author
+        model = models.Company
+        fields = ('id', 'name', 'authors')
 
 
 class AuthorSerializer(serializers.ModelSerializer):
-    uuid1 = serializers.UUIDField()
-    uuid2 = serializers.UUIDField()
-    name = serializers.StringField()
     company = serializers.PrimaryKeyRelatedField(
         model=models.Company)
-
     books = serializers.PrimaryKeyRelatedField(
         model=models.Book, many=True)
 
     class Meta:
+        fields = ('uuid1', 'uuid2', 'name', 'company', 'books')
         model = models.Author
 
 
 class BookSerialzier(serializers.ModelSerializer):
-    id = serializers.IntField()
-    title = serializers.StringField()
     author = serializers.PrimaryKeyRelatedField(
         model=models.Author)
 
     class Meta:
+        fields = ('id', 'title', 'author')
         model = models.Book

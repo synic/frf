@@ -76,9 +76,19 @@ class Serializer(object):
     True
     >>>
     """
-    def __init__(self):
+
+    def __init__(self, initial_fields=None):
         """Initialize the serializer."""
-        self.fields = {}
+
+        field_source_map = {}
+
+        if initial_fields is None:
+            self.fields = {}
+        else:
+            self.fields = initial_fields
+            field_source_map = {f.source: k
+                                for k, f in initial_fields.items()}
+
         self.validators = {}
 
         for attr_name in dir(self):
@@ -97,6 +107,11 @@ class Serializer(object):
                 if attr.source is None:
                     attr.source = attr_name
 
+                if attr.source in field_source_map:
+                    name = field_source_map[attr.source]
+                    if name in self.fields:
+                        del self.fields[name]
+
                 self.fields[attr_name] = attr
 
         # get the validator/clean methods
@@ -104,6 +119,13 @@ class Serializer(object):
             attr = getattr(self, attr_name)
             if attr_name.startswith('clean_') and callable(attr):
                 self.validators[attr_name[6:]] = attr
+
+        if hasattr(self, 'Meta'):
+            required = getattr(self.Meta, 'required', [])
+
+            for field in required:
+                if field in self.fields:
+                    self.fields[field].required = True
 
     def validate(self, obj=None, data=None, ctx=None):
         """Validate data.
@@ -312,11 +334,24 @@ class ModelSerializer(Serializer):
     """
     class Meta:
         model = None
+        fields = None
 
     def __init__(self):
+        from frf.serializers import introspect
+
         if not self.Meta.model:
             raise ValueError(_('You must specify a model.'))
-        super().__init__()
+
+        initial_fields = introspect.table_fields(self, self.Meta.model)
+
+        super().__init__(initial_fields=initial_fields)
+
+        if getattr(self.Meta, 'fields', None) is not None:
+            fields = list(self.fields.keys())
+
+            for field in fields:
+                if field not in self.Meta.fields:
+                    del self.fields[field]
 
     def create(self, cleaned_data, obj, ctx=None):
         return self.Meta.model()

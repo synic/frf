@@ -34,6 +34,8 @@ from sqlalchemy import (  # noqa
     PrimaryKeyConstraint,
     UniqueConstraint,
     Index,
+    CHAR,
+    Float,
 
     # relationships
     ForeignKey,
