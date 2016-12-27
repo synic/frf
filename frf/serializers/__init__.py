@@ -175,7 +175,7 @@ class Serializer(object):
 
             value = data.get(field_name, None)
 
-            if value is None and not field.allow_none:
+            if value is None and not field.nullable:
                 errors[field_name] = [_('Field cannot be `None`.')]
                 continue
 

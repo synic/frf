@@ -37,7 +37,7 @@ class User(mixins.TimestampMixin, models.Model):
 
 class UserSerializer(serializers.ModelSerializer):
     email = serializers.EmailField(required=True)
-    description = serializers.StringField(required=False, allow_none=True)
+    description = serializers.StringField(required=False, nullable=True)
 
     class Meta:
         required = ('username', 'email')
@@ -46,7 +46,7 @@ class UserSerializer(serializers.ModelSerializer):
 
 class UserSerializer2(serializers.ModelSerializer):
     user_age = serializers.IntField(source='age', required=False)
-    description = serializers.StringField(required=False, allow_none=True)
+    description = serializers.StringField(required=False, nullable=True)
 
     class Meta:
         fields = ('uuid', 'username', 'email', 'first_name', 'last_name',

@@ -85,13 +85,15 @@ We need a serializer to convert our blog posts to and from json.  Open up
 
     class ArticleSerializer(serializers.ModelSerializer):
         uuid = serializers.UUIDField(read_only=True)
-        author = serializers.StringField(required=True)
-        post_date = serializers.ISODateTimeField()
-        title = serializers.StringField(required=True)
-        text = serializers.StringField(required=True)
 
         class Meta:
+            fields = ('uuid', 'author', 'post_date', 'title', 'text')
+            required = ('author', 'title', 'text')
             model = models.Article
+
+Most primitive type fields are detected from the model automatically.  Here we
+are overriding the ``uuid`` field so we can make it read-only.  The other
+fields are detected and added automatically.
 
 Create a ViewSet
 ----------------
