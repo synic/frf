@@ -17,7 +17,6 @@
 # code under the terms of the Apache License, Version 2.0, as described
 # above.
 
-import uuid
 import hashlib
 import base64
 import hmac
@@ -39,7 +38,7 @@ class AESCipher(object):
         if not key:
             # Get 32 bytes (256 bits) of data from /dev/urandom
             key = Random.new().read(32)
-        if type(key) != bytes:
+        if not isinstance(key, bytes):
             key = key.encode()
         self.bs = AES.block_size
         self.key = hashlib.sha256(key).digest()

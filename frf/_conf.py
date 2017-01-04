@@ -81,8 +81,10 @@ class Conf(dict):
             return self[key]
 
     def __setattr__(self, key, value):
-        self[key] = value
-        super().__setattr__(key, value)
+        if key not in ('basedir', ):
+            self[key] = value
+        else:
+            super().__setattr__(key, value)
 
     def pathof(self, *path):
         return os.path.abspath(os.path.join(self.basedir, *path))
