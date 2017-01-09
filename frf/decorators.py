@@ -17,9 +17,12 @@
 # code under the terms of the Apache License, Version 2.0, as described
 # above.
 
+import functools
+
 import falcon
 
 from frf.views import View
+from frf.utils.conf import OverrideSettingsManager
 
 
 class SimpleView(View):
@@ -99,3 +102,21 @@ def simpleview(methods=('get', ), **kwargs):
         return simpleview
 
     return wrapper
+
+
+def override_settings(**variables):
+    """Temporarily override configuration settings.
+
+    See :class:`frf.utils.conf.override_settings` for more information.
+
+    This is the same as the context manager, except in function form for
+    overriding specific test cases, etc.
+    """
+    def decorator(func):
+        @functools.wraps(func)
+        def wrapper(*args, **kwargs):
+            with OverrideSettingsManager(**variables):
+                retval = func(*args, **kwargs)
+            return retval
+        return wrapper
+    return decorator

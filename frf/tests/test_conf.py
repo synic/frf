@@ -21,6 +21,8 @@ import unittest
 import os
 
 from frf._conf import Conf
+from frf.utils.conf import OverrideSettingsManager
+from frf.decorators import override_settings
 
 
 class TestCase(unittest.TestCase):
@@ -50,3 +52,28 @@ class TestCase(unittest.TestCase):
     def test_get_path_of_file(self):
         self.assertIn(
             'frf/tests/test_conf.py', self.conf.pathof('test_conf.py'))
+
+    def test_override_settings_context_manager(self):
+        self.conf.SOMESETTING = 1
+
+        self.assertEqual(self.conf.SOMESETTING, 1)
+
+        with OverrideSettingsManager(conf=self.conf, SOMESETTING='test'):
+            self.assertEqual(self.conf.SOMESETTING, 'test')
+
+        self.assertEqual(self.conf.SOMESETTING, 1)
+
+    def test_override_settings_decorator(self):
+        self.conf.SOMESETTING = 1
+
+        self.assertEqual(self.conf.SOMESETTING, 1)
+
+        @override_settings(conf=self.conf, SOMESETTING='test')
+        def some_function(conf):
+            return conf.SOMESETTING
+
+        data = some_function(self.conf)
+
+        self.assertEqual(data, 'test')
+
+        self.assertEqual(self.conf.SOMESETTING, 1)
