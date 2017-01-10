@@ -18,10 +18,11 @@
 # above.
 
 import unittest
+
 import pytz
 
-from frf.utils import timezone
 from frf import conf
+from frf.utils import timezone
 
 
 class TestCase(unittest.TestCase):

@@ -17,9 +17,9 @@
 # code under the terms of the Apache License, Version 2.0, as described
 # above.
 
-import os
 import importlib
 import logging
+import os
 
 logger = logging.getLogger(__name__)
 

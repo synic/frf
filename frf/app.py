@@ -49,16 +49,18 @@ False
 **NOTE**: If you used the ``frf-startproject`` script to create your project,
 this should already be done for you.
 """
-import falcon
+
 import importlib
 import logging
 import logging.config
 
-from frf.utils.importing import import_class
-from frf.routes import IncludeRoutes, ROUTE_REGISTRY
-from frf import exceptions
+import falcon
 
-from . import db, conf, cache
+from frf import exceptions
+from frf.routes import IncludeRoutes, ROUTE_REGISTRY
+from frf.utils.importing import import_class
+
+from . import cache, conf, db
 
 logger = logging.getLogger(__name__)
 

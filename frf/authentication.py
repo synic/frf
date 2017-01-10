@@ -17,10 +17,11 @@
 # code under the terms of the Apache License, Version 2.0, as described
 # above.
 
-import falcon
-import binascii
 import base64
+import binascii
 from gettext import gettext as _
+
+import falcon
 
 
 class BasicAuthentication(object):

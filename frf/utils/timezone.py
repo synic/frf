@@ -17,9 +17,10 @@
 # code under the terms of the Apache License, Version 2.0, as described
 # above.
 
-import pytz
-import logging
 import datetime
+import logging
+
+import pytz
 
 from frf import conf
 

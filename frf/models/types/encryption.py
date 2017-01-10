@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
-import json
 import datetime
+import json
 
 from sqlalchemy.types import Binary, String, TypeDecorator
 

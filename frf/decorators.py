@@ -21,8 +21,8 @@ import functools
 
 import falcon
 
-from frf.views import View
 from frf.utils.conf import OverrideSettingsManager
+from frf.views import View
 
 
 class SimpleView(View):

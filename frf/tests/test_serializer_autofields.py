@@ -20,6 +20,7 @@
 import uuid
 
 from falcon.testing import TestCase as BaseTestCase
+
 from frf import db, models, serializers
 from frf.models import mixins
 

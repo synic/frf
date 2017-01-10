@@ -3,6 +3,7 @@
 import argparse
 import importlib
 import sys
+
 import tabulate
 
 try:

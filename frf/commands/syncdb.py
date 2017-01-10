@@ -17,13 +17,12 @@
 # code under the terms of the Apache License, Version 2.0, as described
 # above.
 
-import inspect
 import importlib
-
-from frf.commands.base import BaseCommand
-from frf import models as falconmodels
+import inspect
 
 from frf import conf, db
+from frf import models as falconmodels
+from frf.commands.base import BaseCommand
 
 
 class Command(BaseCommand):

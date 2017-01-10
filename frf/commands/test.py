@@ -17,11 +17,12 @@
 # code under the terms of the Apache License, Version 2.0, as described
 # above.
 
-import pytest
 import sys
 
-from frf.commands.base import BaseCommand
+import pytest
+
 from frf import conf
+from frf.commands.base import BaseCommand
 
 
 class Command(BaseCommand):

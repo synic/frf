@@ -17,17 +17,18 @@
 # code under the terms of the Apache License, Version 2.0, as described
 # above.
 
-import falcon
-import uuid
-import unittest
 import datetime
+import unittest
+import uuid
 
-from frf import serializers, exceptions, db
+import falcon
+
+from frf import db, exceptions, serializers
 from frf.tests.base import BaseTestCase
-from frf.utils import timezone
-from frf.utils.json import serialize
 from frf.tests import fakeproject  # noqa
 from frf.tests.fakemodule import models
+from frf.utils import timezone
+from frf.utils.json import serialize
 
 
 class DummySerializer(serializers.Serializer):

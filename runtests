@@ -1,3 +1,4 @@
 #!/bin/sh
 
 pytest $@
+flake8 --show-source --statistics frf

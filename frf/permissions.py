@@ -17,6 +17,7 @@
 # code under the terms of the Apache License, Version 2.0, as described
 # above.
 
+
 class BasePermission(object):
     """Base permission class.
 

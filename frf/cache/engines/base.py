@@ -17,6 +17,7 @@
 # code under the terms of the Apache License, Version 2.0, as described
 # above.
 
+
 class CacheEngine(object):
     def get(self, key, default, encoding='utf8'):
         """Get a value from the store.

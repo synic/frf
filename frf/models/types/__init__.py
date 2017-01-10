@@ -17,17 +17,16 @@
 # code under the terms of the Apache License, Version 2.0, as described
 # above.
 
-import uuid
 import binascii
-import pytz
+import uuid
 
 from Crypto.Cipher import AES
-
+import pytz
 import sqlalchemy
 
-from sqlalchemy.types import CHAR, Text, TypeDecorator
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.ext.mutable import Mutable
+from sqlalchemy.types import CHAR, Text, TypeDecorator
 
 from frf.models.types.encryption import (  # noqa
     EncryptedType, EncryptedDictionaryType)

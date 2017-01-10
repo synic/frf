@@ -17,10 +17,8 @@
 # code under the terms of the Apache License, Version 2.0, as described
 # above.
 
-from frf import viewsets, permissions, views
-
-from frf.tests.fakemodule import serializers
-from frf.tests.fakemodule import models
+from frf import permissions, views, viewsets
+from frf.tests.fakemodule import models, serializers
 
 
 class CompanyViewSet(viewsets.ModelViewSet):

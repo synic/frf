@@ -17,10 +17,11 @@
 # code under the terms of the Apache License, Version 2.0, as described
 # above.
 
-import mock
-import pytz
 import datetime
 import unittest
+
+import mock
+import pytz
 
 from frf import cache
 

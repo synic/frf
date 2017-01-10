@@ -17,12 +17,12 @@
 # code under the terms of the Apache License, Version 2.0, as described
 # above.
 
-import unittest
 import os
+import unittest
 
 from frf._conf import Conf
-from frf.utils.conf import OverrideSettingsManager
 from frf.decorators import override_settings
+from frf.utils.conf import OverrideSettingsManager
 
 
 class TestCase(unittest.TestCase):
