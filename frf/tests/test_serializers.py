@@ -22,11 +22,10 @@ import uuid
 import unittest
 import datetime
 
-from frf.utils import timezone
 from frf import serializers, exceptions, db
 from frf.tests.base import BaseTestCase
+from frf.utils import timezone
 from frf.utils.json import serialize
-
 from frf.tests import fakeproject  # noqa
 from frf.tests.fakemodule import models
 

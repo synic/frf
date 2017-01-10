@@ -48,6 +48,18 @@ class ValidationError(HTTPError):
             description=message)
 
 
+class TestingError(Exception):
+    pass
+
+
+class DatabaseError(Exception):
+    pass
+
+
+class InitializationError(Exception):
+    pass
+
+
 class InvalidFieldException(Exception):
     """Exception to raise when a serializer contains an invalid field.
 

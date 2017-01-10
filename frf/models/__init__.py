@@ -17,6 +17,8 @@
 # code under the terms of the Apache License, Version 2.0, as described
 # above.
 
+import logging
+
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.ext.mutable import MutableDict  # noqa
 from sqlalchemy import (  # noqa
@@ -53,13 +55,19 @@ from sqlalchemy.orm import (  # noqa
 from frf.models.types import (  # noqa
     EncryptedType,
     EncryptedDictionaryType,
-    JSON,
-    JSONB,
     GUID,
     MutableList,
     DateTime)
 
 from frf.utils.db import BaseQuery
+
+logger = logging.getLogger(__name__)
+
+
+try:
+    from sqlalchemy.dialects.postgresql import JSON, JSONB  # noqa
+except ImportError:
+    logger.warning('Error importing PostgreSQL JSON types.')
 
 
 class Choices(list):

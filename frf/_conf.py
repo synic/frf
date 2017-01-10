@@ -81,7 +81,7 @@ class Conf(dict):
             return self[key]
 
     def __setattr__(self, key, value):
-        if key not in ('basedir', ):
+        if key not in ('basedir', '__file__'):
             self[key] = value
         else:
             super().__setattr__(key, value)
