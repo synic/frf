@@ -56,11 +56,20 @@ SQLALchemy session like so (assuming your project name is ``yourproject``):
 UUID('2d2fac55-71e9-45c6-b349-13e706efa8f4')
 >>>
 """
+import contextlib
+import importlib
+import inspect
+
+from factory.alchemy import SQLAlchemyModelFactory
+
 from sqlalchemy import create_engine
 from sqlalchemy.orm import scoped_session, sessionmaker
 
-from frf.utils.db import DatabaseError, _QueryProperty
+from frf import conf, models
+from frf.exceptions import DatabaseError
+from frf.utils.db import _QueryProperty
 from frf.utils.json import serialize, deserialize
+
 
 engine = None
 _session_maker = None
@@ -123,3 +132,84 @@ def init(connection_uri, echo=False, use_greenlet_scope=False):
         _session_maker, scopefunc=get_ident)
 
     Model.query = _QueryProperty(session)
+
+
+def create_all():
+    """Create all tables in the database.
+
+    Tables that already exist in the database will not be changed.
+    """
+    if not engine or not session:
+        raise DatabaseError('Database is not yet initialized')
+
+    # make sure all models are imported
+    for module_name in conf.get('INSTALLED_MODULES', []):
+        try:
+            importlib.import_module('{}.models'.format(module_name))
+        except ImportError:
+            pass
+
+        # fix all factories
+        try:
+            module = importlib.import_module('{}.tests.factories'.format(
+                module_name))
+            for attr_name in dir(module):
+                attr = getattr(module, attr_name)
+                if inspect.isclass(attr) and issubclass(
+                        attr, SQLAlchemyModelFactory):
+                    attr._meta.sqlalchemy_session = session
+
+        except ImportError:
+            pass
+
+    models.Model.metadata.create_all(engine)
+
+
+def drop_all():
+    """Drop all tables from the database.
+
+    An error will NOT be thrown if a table does not exist in the database.
+    """
+    if not engine or not session:
+        raise DatabaseError('Database is not yet initialized')
+
+    session.close()
+
+    for module_name in conf.get('INSTALLED_MODULES', []):
+        try:
+            importlib.import_module('{}.models'.format(
+                module_name))
+        except ImportError:
+            pass
+
+    models.Model.metadata.drop_all(engine)
+
+
+def truncate_all():
+    """Truncate all tables.
+
+    Useful for the testing databases.
+    """
+    if not engine or not session:
+        raise DatabaseError('Database is not yet initialized')
+
+    session.close()
+
+    with contextlib.closing(engine.connect()) as con:
+        trans = con.begin()
+        for module_name in conf.get('INSTALLED_MODULES', []):
+            try:
+                module = importlib.import_module('{}.models'.format(
+                    module_name))
+                for attr_name in dir(module):
+                    attr = getattr(module, attr_name)
+                    if inspect.isclass(attr) and issubclass(
+                            attr, models.Model):
+
+                        # truncate the table
+                        con.execute(attr.__table__.delete())
+
+            except ImportError:
+                pass
+
+        trans.commit()

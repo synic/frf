@@ -19,10 +19,30 @@
 
 from falcon.testing import TestCase
 
-from frf import conf
+from frf import conf, db
+from frf.exceptions import TestingError
 
 
 class BaseTestCase(TestCase):
     def setUp(self):
         conf['TESTING'] = True
+
+        self.sqlalchemy_test_uri = conf.get('SQLALCHEMY_TEST_CONNECTION_URI')
+        if conf.get('SQLALCHEMY_CONNECTION_URI') \
+                and not self.sqlalchemy_test_uri:
+            raise TestingError(
+                'You must set `SQLALCHEMY_TEST_CONNECTION_URI` in your '
+                'settings file.')
+
+        if self.sqlalchemy_test_uri:
+            # set up the test database
+            db.init(self.sqlalchemy_test_uri, echo=False)
+            db.create_all()
+
         super().setUp()
+
+    def tearDown(self):
+        super().tearDown()
+
+        if self.sqlalchemy_test_uri:
+            db.truncate_all()

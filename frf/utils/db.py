@@ -26,10 +26,6 @@ from sqlalchemy.orm.exc import UnmappedClassError
 from sqlalchemy.sql import func
 
 
-class DatabaseError(Exception):
-    pass
-
-
 class Pagination(object):
     """Internal helper class returned by `BaseQuery.paginate`.
 
