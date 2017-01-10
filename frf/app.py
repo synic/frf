@@ -147,7 +147,8 @@ def init(project_name, settings_file, base_dir, main_module=None):
                 logger.warning(
                     'Could not find routes in base module {}'.format(
                         route_module_name))
-    except ImportError:
+    except ImportError as e:
         logger.warning(
             'Base route module {} could not be imported.'.format(
                 route_module_name))
+        logger.error(e)
