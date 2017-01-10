@@ -676,6 +676,13 @@ class PrimaryKeyRelatedField(Field):
 
     @property
     def queryset(self):
+        if not hasattr(self.model, 'query'):
+            raise exceptions.InitializationError(
+                'Error initializing field {}, '
+                'Invalid model {} or database is not initialized.'.format(
+                    self.__class__.__name__,
+                    self.model))
+
         if not self._queryset:
             return self.model.query.filter()
         return self._queryset

@@ -17,6 +17,8 @@
 # code under the terms of the Apache License, Version 2.0, as described
 # above.
 
+import logging
+
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.ext.mutable import MutableDict  # noqa
 from sqlalchemy import (  # noqa

@@ -121,10 +121,11 @@ def init(project_name, settings_file, base_dir, main_module=None):
         middleware.append(cls())
 
     # set up the database
-    db.init(
-        conf.get('SQLALCHEMY_CONNECTION_URI', 'sqlite:///:memory:'),
-        echo=conf.get('SQLALCHEMY_ECHO', False),
-        use_greenlet_scope=conf.get('USING_GREENLET', False))
+    if conf.get('SQLALCHEMY_CONNECTION_URI'):
+        db.init(
+            conf.get('SQLALCHEMY_CONNECTION_URI', 'sqlite:///:memory:'),
+            echo=conf.get('SQLALCHEMY_ECHO', False),
+            use_greenlet_scope=conf.get('USING_GREENLET', False))
 
     # set up the cache
     cache.init(conf.get(
