@@ -29,7 +29,6 @@ from sqlalchemy.types import CHAR, Text, TypeDecorator
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.ext.mutable import Mutable
 
-from frf.models.types.json import JSON, JSONB
 from frf.models.types.encryption import (  # noqa
     EncryptedType, EncryptedDictionaryType)
 
@@ -174,8 +173,3 @@ class EncryptedValueType(TypeDecorator):
 
     def process_result_value(self, value, dialect):
         return aes_decrypt(value, self.encryption_key)
-
-
-# avoid unused import warnings
-assert JSON
-assert JSONB

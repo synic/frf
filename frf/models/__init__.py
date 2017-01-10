@@ -53,13 +53,19 @@ from sqlalchemy.orm import (  # noqa
 from frf.models.types import (  # noqa
     EncryptedType,
     EncryptedDictionaryType,
-    JSON,
-    JSONB,
     GUID,
     MutableList,
     DateTime)
 
 from frf.utils.db import BaseQuery
+
+logger = logging.getLogger(__name__)
+
+
+try:
+    from sqlalchemy.dialects.postgresql import JSON, JSONB  # noqa
+except ImportError:
+    logger.warning('Error importing PostgreSQL JSON types.')
 
 
 class Choices(list):
