@@ -66,7 +66,8 @@ from sqlalchemy import create_engine
 from sqlalchemy.orm import scoped_session, sessionmaker
 
 from frf import conf, models
-from frf.utils.db import _QueryProperty, DatabaseError
+from frf.exceptions import DatabaseError
+from frf.utils.db import _QueryProperty
 from frf.utils.json import deserialize, serialize
 
 
