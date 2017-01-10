@@ -17,16 +17,17 @@
 # code under the terms of the Apache License, Version 2.0, as described
 # above.
 
+import functools
 import json
 import uuid
+
 import falcon
-import functools
 
 from falcon.testing import TestCase as BaseTestCase
 
-from frf import serializers, viewsets, filters, renderers, exceptions
-from frf.tests.fake import faker
 from frf import db, models
+from frf import exceptions, filters, renderers, serializers, viewsets
+from frf.tests.fake import faker
 
 
 class User(object):

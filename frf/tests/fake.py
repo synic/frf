@@ -17,16 +17,16 @@
 # code under the terms of the Apache License, Version 2.0, as described
 # above.
 
-import random
 import datetime
-import time
-import pytz
 import hashlib
-from dateutil.relativedelta import relativedelta
+import random
+import time
 
+from dateutil.relativedelta import relativedelta
 from faker import Faker
 from faker.providers import BaseProvider
-from faker.providers.date_time import datetime_to_timestamp
+import pytz
+
 
 faker = Faker()
 

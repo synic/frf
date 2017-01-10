@@ -17,16 +17,17 @@
 # code under the terms of the Apache License, Version 2.0, as described
 # above.
 
-import json
 import datetime
-import dateutil.parser
-import uuid
-import re
-
 from gettext import gettext as _
+import json
+import re
+import uuid
 
-from frf.utils.json import deserialize
+import dateutil.parser
+
+
 from frf import exceptions
+from frf.utils.json import deserialize
 
 
 class Field(object):

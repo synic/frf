@@ -17,7 +17,7 @@
 # code under the terms of the Apache License, Version 2.0, as described
 # above.
 
-from setuptools import setup, find_packages
+from setuptools import find_packages, setup
 
 setup(name='frf',
       version='0.1',
@@ -42,6 +42,7 @@ setup(name='frf',
           'Docs': ['Sphinx'],
           'Pretty': ['colorama', 'pyfiglet'],
           'Cache': ['redis'],
+          'Testing': ['flake8', 'factory-boy],
           },
       scripts=['frf/bin/frf-startproject'],
       package_data={'frf': ['skel/*']},

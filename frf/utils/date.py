@@ -17,9 +17,10 @@
 # code under the terms of the Apache License, Version 2.0, as described
 # above.
 
+import datetime
+
 import pytz
 import six
-import datetime
 
 
 def start_and_end_of(date):

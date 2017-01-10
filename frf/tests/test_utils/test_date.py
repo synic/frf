@@ -17,9 +17,10 @@
 # code under the terms of the Apache License, Version 2.0, as described
 # above.
 
-import unittest
-import pytz
 import datetime
+import unittest
+
+import pytz
 
 from frf.utils import date as dateutils
 

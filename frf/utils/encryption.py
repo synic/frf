@@ -17,8 +17,8 @@
 # code under the terms of the Apache License, Version 2.0, as described
 # above.
 
-import hashlib
 import base64
+import hashlib
 import hmac
 
 from Crypto import Random

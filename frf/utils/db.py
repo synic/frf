@@ -17,9 +17,10 @@
 # code under the terms of the Apache License, Version 2.0, as described
 # above.
 
-import falcon
 
 from math import ceil
+
+import falcon
 
 from sqlalchemy import orm
 from sqlalchemy.orm.exc import UnmappedClassError
@@ -100,7 +101,7 @@ class Pagination(object):
         `None`.
         """
         last = 0
-        for num in xrange(1, self.pages + 1):
+        for num in range(1, self.pages + 1):
             if num <= left_edge or \
                (num > self.page - left_current - 1 and
                 num < self.page + right_current) or \

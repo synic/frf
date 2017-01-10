@@ -17,12 +17,13 @@
 # code under the terms of the Apache License, Version 2.0, as described
 # above.
 
-import falcon
-import traceback
-import logging
-import json
-
 from gettext import gettext as _
+import json
+import logging
+import traceback
+
+import falcon
+
 
 from falcon.errors import (  # noqa
     HTTPError, HTTPForbidden, HTTPNotAcceptable, HTTPNotFound, HTTPConflict,

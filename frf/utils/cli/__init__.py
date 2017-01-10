@@ -16,4 +16,3 @@
 # By contributing to this project, you agree to also license your source
 # code under the terms of the Apache License, Version 2.0, as described
 # above.
-

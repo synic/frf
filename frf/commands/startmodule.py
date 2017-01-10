@@ -18,11 +18,12 @@
 # above.
 
 import os
-import jinja2
-import frf
 
-from frf.commands.base import BaseCommand
+import jinja2
+
+import frf
 from frf import conf
+from frf.commands.base import BaseCommand
 
 
 basedir = os.path.abspath(os.path.dirname(frf.__file__))

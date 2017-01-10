@@ -24,7 +24,7 @@ from .fields import (  # noqa
     ISODateTimeField, SerializerField, ListField, UUIDField, JSONField,
     IntField, PrimaryKeyRelatedField,
 )
-from frf.exceptions import ValidationError, InvalidFieldException
+from frf.exceptions import InvalidFieldException,  ValidationError
 
 
 class SerializerObject(object):

@@ -17,9 +17,10 @@
 # code under the terms of the Apache License, Version 2.0, as described
 # above.
 
-import json
-import falcon
 from gettext import gettext as _
+import json
+
+import falcon
 
 from frf import db, views
 

@@ -36,4 +36,3 @@ def import_class(cl):
         raise ImportError('{} does not refer to a class.'.format(cl))
 
     return attr
-

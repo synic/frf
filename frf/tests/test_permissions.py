@@ -18,11 +18,11 @@
 # above.
 
 import json
+
 import falcon
 
-from frf.tests.base import BaseTestCase
-
 from frf.tests import fakeproject
+from frf.tests.base import BaseTestCase
 
 
 class FakeProjectTestCase(BaseTestCase):

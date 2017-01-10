@@ -36,11 +36,12 @@ in your settings:
 If the ``default_timeout`` key is not provided, ``30`` seconds will be
 used.
 """
+
 import copy
 from gettext import gettext as _
 
-from frf.utils.importing import import_class
 from frf.cache import exceptions
+from frf.utils.importing import import_class
 
 _cache_engine = None
 

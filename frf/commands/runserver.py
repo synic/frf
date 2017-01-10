@@ -19,8 +19,8 @@
 
 import os
 
-from frf.commands.base import BaseCommand
 from frf import conf
+from frf.commands.base import BaseCommand
 
 
 class Command(BaseCommand):

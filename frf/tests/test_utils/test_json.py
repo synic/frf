@@ -17,9 +17,9 @@
 # code under the terms of the Apache License, Version 2.0, as described
 # above.
 
-import uuid
 import datetime
 import unittest
+import uuid
 
 from frf.utils import json
 
@@ -46,4 +46,3 @@ class TestCase(unittest.TestCase):
         res = json.deserialize(json.serialize(data))
         self.assertEqual(
             res['uuid'], 'abea9b06-43a1-4e84-ad75-fc0346a64497')
-

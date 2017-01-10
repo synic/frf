@@ -56,19 +56,18 @@ SQLALchemy session like so (assuming your project name is ``yourproject``):
 UUID('2d2fac55-71e9-45c6-b349-13e706efa8f4')
 >>>
 """
+
 import contextlib
 import importlib
 import inspect
 
 from factory.alchemy import SQLAlchemyModelFactory
-
 from sqlalchemy import create_engine
 from sqlalchemy.orm import scoped_session, sessionmaker
 
 from frf import conf, models
-from frf.exceptions import DatabaseError
-from frf.utils.db import _QueryProperty
-from frf.utils.json import serialize, deserialize
+from frf.utils.db import _QueryProperty, DatabaseError
+from frf.utils.json import deserialize, serialize
 
 
 engine = None

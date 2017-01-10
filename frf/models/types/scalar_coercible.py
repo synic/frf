@@ -17,6 +17,7 @@
 # code under the terms of the Apache License, Version 2.0, as described
 # above.
 
+
 class ScalarCoercible(object):
     def _coerce(self, value):
         raise NotImplemented
