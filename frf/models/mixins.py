@@ -24,10 +24,12 @@ class TimestampMixin(object):
     created_at = sa.Column(
         sa.DateTime(timezone=True),
         default=sa.func.current_timestamp(),
+        nullable=False,
         index=True)
     updated_at = sa.Column(
         sa.DateTime(timezone=True),
         index=True,
+        nullable=False,
         default=sa.func.current_timestamp(),
         onupdate=sa.func.current_timestamp())
 
