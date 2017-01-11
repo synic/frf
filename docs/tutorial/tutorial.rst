@@ -13,7 +13,7 @@ One you have followed the following steps, you should have a working blog api!
 
    virtualenv
    installation
-   firstmodule
+   firstapp
    tryit
    authentication
    permissions

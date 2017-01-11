@@ -147,9 +147,9 @@ def create_all():
         raise DatabaseError('Database is not yet initialized')
 
     # make sure all models are imported
-    for module_name in conf.get('INSTALLED_MODULES', []):
+    for app_name in conf.get('INSTALLED_APPS', []):
         try:
-            importlib.import_module('{}.models'.format(module_name))
+            importlib.import_module('{}.models'.format(app_name))
         except ImportError:
             pass
 
@@ -157,7 +157,7 @@ def create_all():
         if SQLAlchemyModelFactory:
             try:
                 module = importlib.import_module('{}.tests.factories'.format(
-                    module_name))
+                    app_name))
                 for attr_name in dir(module):
                     attr = getattr(module, attr_name)
                     if inspect.isclass(attr) and issubclass(
@@ -180,10 +180,10 @@ def drop_all():
 
     session.close()
 
-    for module_name in conf.get('INSTALLED_MODULES', []):
+    for app_name in conf.get('INSTALLED_APPS', []):
         try:
             importlib.import_module('{}.models'.format(
-                module_name))
+                app_name))
         except ImportError:
             pass
 
@@ -202,10 +202,10 @@ def truncate_all():
 
     with contextlib.closing(engine.connect()) as con:
         trans = con.begin()
-        for module_name in conf.get('INSTALLED_MODULES', []):
+        for app_name in conf.get('INSTALLED_APPS', []):
             try:
                 module = importlib.import_module('{}.models'.format(
-                    module_name))
+                    app_name))
                 for attr_name in dir(module):
                     attr = getattr(module, attr_name)
                     if inspect.isclass(attr) and issubclass(

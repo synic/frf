@@ -19,7 +19,7 @@
 
 from frf import serializers
 
-from frf.tests.fakemodule import models
+from frf.tests.fakeapp import models
 
 
 class CompanySerializer(serializers.ModelSerializer):

@@ -1,6 +1,6 @@
 from frf import viewsets
 
-from {{module_name}} import models, serializers
+from {{app_name}} import models, serializers
 
 
 # Add your viewsets here

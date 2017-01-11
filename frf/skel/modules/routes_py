@@ -1,7 +1,0 @@
-from {{module_name}} import viewsets
-
-
-routes = [
-    # Add your routes here
-    # ('/{{module_name}}/', viewsets.IndexViewSet()),  # an example route
-]

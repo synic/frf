@@ -17,7 +17,7 @@
 # code under the terms of the Apache License, Version 2.0, as described
 # above.
 
-from frf.tests.fakemodule import viewsets
+from frf.tests.fakeapp import viewsets
 
 book_viewset = viewsets.BookViewSet()
 author_viewset = viewsets.AuthorViewSet()

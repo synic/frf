@@ -1,16 +1,16 @@
-Create the Blog Module
-=======================
+Create the Blog Application
+===========================
 
-FRF applications are arranged in modules.  For instance,
-our ``blogapi`` app might have a ``blog`` module for serving blog entries,
-but we might also have a ``users`` module for user authentication or a
-``gallery`` module for serving up pictures.
+FRF applications are arranged by apps.  For instance,
+our ``blogapi`` repository might have a ``blog`` app for serving blog entries,
+but we might also have a ``users`` app for user authentication or a
+``gallery`` app for serving up pictures.
 
-Let's create our ``blog`` module:
+Let's create our ``blog`` app:
 
 .. code-block:: text
 
-   $ ./manage.py startmodule blog
+   $ ./manage.py startapp blog
 
 This will create a directory structure like the following:
 
@@ -53,14 +53,14 @@ edit it to look like this:
        text = models.Column(models.Text)
 
 Let's tell FRF that we are ready to use our new model.  Open up
-``blogapi/settings.py`` and find the line that says ``INSTALLED_MODULES`` and
+``blogapi/settings.py`` and find the line that says ``INSTALLED_APPS`` and
 change it to look like this:
 
 .. code-block:: python
    :caption: settings.py
 
    #: Database configuration
-   INSTALLED_MODULES = ['blog']
+   INSTALLED_APPS = ['blog']
 
 Now we can tell FRF to actually create the table in the database for us:
 

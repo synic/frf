@@ -1,5 +1,5 @@
 from frf import serializers
 
-from {{module_name}} import models
+from {{app_name}} import models
 
 # Add your serializers here
