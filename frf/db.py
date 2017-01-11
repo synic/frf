@@ -61,7 +61,11 @@ import contextlib
 import importlib
 import inspect
 
-from factory.alchemy import SQLAlchemyModelFactory
+try:
+    from factory.alchemy import SQLAlchemyModelFactory
+except ImportError:
+    SQLAlchemyModelFactory = None
+
 from sqlalchemy import create_engine
 from sqlalchemy.orm import scoped_session, sessionmaker
 
@@ -150,17 +154,18 @@ def create_all():
             pass
 
         # fix all factories
-        try:
-            module = importlib.import_module('{}.tests.factories'.format(
-                module_name))
-            for attr_name in dir(module):
-                attr = getattr(module, attr_name)
-                if inspect.isclass(attr) and issubclass(
-                        attr, SQLAlchemyModelFactory):
-                    attr._meta.sqlalchemy_session = session
+        if SQLAlchemyModelFactory:
+            try:
+                module = importlib.import_module('{}.tests.factories'.format(
+                    module_name))
+                for attr_name in dir(module):
+                    attr = getattr(module, attr_name)
+                    if inspect.isclass(attr) and issubclass(
+                            attr, SQLAlchemyModelFactory):
+                        attr._meta.sqlalchemy_session = session
 
-        except ImportError:
-            pass
+            except ImportError:
+                pass
 
     models.Model.metadata.create_all(engine)
 
