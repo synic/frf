@@ -17,7 +17,20 @@
 # code under the terms of the Apache License, Version 2.0, as described
 # above.
 
+import os
+
 from setuptools import find_packages, setup
+
+
+def skel_files():
+    """Get list of skel files for project/app creation."""
+    paths = []
+    for (path, directory, filenames) in os.walk('frf/skel'):
+        for filename in filenames:
+            paths.append(os.path.join('..', path, filename))
+
+    return paths
+
 
 setup(name='frf',
       version='0.1',
@@ -39,11 +52,13 @@ setup(name='frf',
           'gunicorn',
       ],
       extras_require={
-          'Docs': ['Sphinx'],
+          'Docs': ['Sphinx',
+                   'sphinxcontrib-rextheme',
+                   'sphinxcontrib-napoleon'],
           'Pretty': ['colorama', 'pyfiglet'],
           'Cache': ['redis'],
           'Testing': ['flake8', 'factory-boy', 'mock'],
           },
       scripts=['frf/bin/frf-startproject'],
-      package_data={'frf': ['frf/skel/*']},
+      package_data={'frf': skel_files()},
       zip_safe=False)

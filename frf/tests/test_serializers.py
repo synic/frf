@@ -26,7 +26,7 @@ import falcon
 from frf import db, exceptions, serializers
 from frf.tests.base import BaseTestCase
 from frf.tests import fakeproject  # noqa
-from frf.tests.fakemodule import models
+from frf.tests.fakeapp import models
 from frf.utils import timezone
 from frf.utils.json import serialize
 

@@ -1,13 +1,17 @@
-*.pyc
-schema.architect~
-.dir-locals.el
-docker/citus/.out.sql
-.cache
-.coverage
-*client_secrets.json
+# emacs stuff
 TAGS
+.dir-locals.el
+.cache
+
+# build output
+*.pyc
+.coverage
 _build
 _static
 _templates
 build/
+frf.egg-info
+dist
+
+# weird mac folder
 .DS_Store

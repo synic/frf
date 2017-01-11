@@ -1,0 +1,7 @@
+from {{app_name}} import viewsets
+
+
+routes = [
+    # Add your routes here
+    # ('/{{app_name}}/', viewsets.IndexViewSet()),  # an example route
+]

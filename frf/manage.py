@@ -48,7 +48,7 @@ def find_commands():
         'frf.commands.shell',
         'frf.commands.test',
         'frf.commands.syncdb',
-        'frf.commands.startmodule',
+        'frf.commands.startapp',
         ]
 
     module_names += conf.get('COMMAND_MODULES', [])

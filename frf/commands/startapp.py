@@ -27,7 +27,7 @@ from frf.commands.base import BaseCommand
 
 
 basedir = os.path.abspath(os.path.dirname(frf.__file__))
-skeldir = os.path.join(basedir, 'skel', 'modules')
+skeldir = os.path.join(basedir, 'skel', 'apps')
 
 
 def touch(fname, times=None):
@@ -44,13 +44,13 @@ def copy_skel(template_name, path, **kwargs):
 
 
 class Command(BaseCommand):
-    description = 'add a new module to your project'
+    description = 'add a new app to your project'
 
     def add_arguments(self, parser):
-        parser.add_argument('name', help='The module name.')
+        parser.add_argument('name', help='The app name.')
 
     def handle(self, args):
-        self.greet('Creating module "{}" in "{}"... '.format(
+        self.greet('Creating app "{}" in "{}"... '.format(
             args.name, conf.pathof(os.path.dirname(args.name))), end='')
 
         output_dir = conf.pathof(args.name)
@@ -65,6 +65,6 @@ class Command(BaseCommand):
             copy_skel(
                 skel_file,
                 os.path.join(output_dir, skel_file.replace('_py', '.py')),
-                project_name=conf.PROJECT_NAME, module_name=args.name)
+                project_name=conf.PROJECT_NAME, app_name=args.name)
 
         print('Done!')

@@ -19,7 +19,7 @@
 
 import logging
 
-from sqlalchemy.ext.declarative import declarative_base
+from sqlalchemy.ext.declarative import declarative_base, declared_attr  # noqa
 from sqlalchemy.ext.mutable import MutableDict  # noqa
 from sqlalchemy import (  # noqa
     func,
@@ -45,6 +45,12 @@ from sqlalchemy import (  # noqa
     # operators
     or_,
     and_,
+
+    # functions
+    text,
+
+    # signals
+    event,
     )
 
 from sqlalchemy.orm import (  # noqa

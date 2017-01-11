@@ -1,0 +1,3 @@
+from frf import models
+
+# Define models for your app here

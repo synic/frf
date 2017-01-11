@@ -19,8 +19,8 @@
 
 DEBUG = True
 TIMEZONE = 'US/Mountain'
-INSTALLED_MODULES = [
-    'frf.tests.fakemodule',
+INSTALLED_APP = [
+    'frf.tests.fakeapp',
     ]
 
 SQLALCHEMY_CONNECTION_URI = 'sqlite:///:memory:'

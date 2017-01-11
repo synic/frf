@@ -18,7 +18,7 @@
 # above.
 
 from frf import permissions, views, viewsets
-from frf.tests.fakemodule import models, serializers
+from frf.tests.fakeapp import models, serializers
 
 
 class CompanyViewSet(viewsets.ModelViewSet):

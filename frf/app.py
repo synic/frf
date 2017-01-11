@@ -89,25 +89,25 @@ def _add_routes(app, route_list):
             app.add_route(route[0], route[1])
 
 
-def init(project_name, settings_file, base_dir, main_module=None):
+def init(project_name, settings_file, base_dir, main_app=None):
     """Initialize frf.
 
     Args:
         settings_file (str): string path to the main settings file, such as
             `skedup.settings` (if your project name was skedup).
         base_dir (str): The base directory of your project.
-        main_module (str): The main module name.  If you do not pass this, the
+        main_app (str): The main app name.  If you do not pass this, the
             basename of ``base_dir`` will be used.
     """
     global api
 
-    if not main_module:
-        main_module = project_name
+    if not main_app:
+        main_app = project_name
 
     # conf object setup
     conf.init(settings_file, base_dir)
     conf['PROJECT_NAME'] = project_name
-    conf['MAIN_MODULE'] = main_module
+    conf['MAIN_APP'] = main_app
 
     # set up logging
     if 'LOGGING' in conf:
@@ -133,19 +133,34 @@ def init(project_name, settings_file, base_dir, main_module=None):
     cache.init(conf.get(
         'CACHE', {'engine': 'frf.cache.engines.dummy.DummyCacheEngine'}))
 
+    # call app ``init_app`` functions
+    for app_name in conf.get('INSTALLED_APPS', []):
+        try:
+            app = importlib.import_module(app_name)
+        except ImportError:
+            logger.error(
+                'Could not import app {} which was referenced by '
+                'INSTALLED_APP in the application settings.'.format(
+                    app_name))
+            raise
+
+        init_app_func = getattr(app, 'init_app', None)
+        if callable(init_app_func):
+            init_app_func()
+
     api = falcon.API(middleware=middleware)
     api.set_error_serializer(exceptions.error_serializer)
 
-    route_module_name = '{}.routes'.format(main_module)
+    route_module_name = '{}.routes'.format(main_app)
     try:
         route_module = importlib.import_module(route_module_name)
-        module_routes = getattr(route_module, 'routes', None)
-        if module_routes:
-            _add_routes(api, module_routes)
+        app_routes = getattr(route_module, 'routes', None)
+        if app_routes:
+            _add_routes(api, app_routes)
         else:
-            if module_routes is None:
+            if app_routes is None:
                 logger.warning(
-                    'Could not find routes in base module {}'.format(
+                    'Could not find routes in base route module: {}'.format(
                         route_module_name))
     except ImportError as e:
         logger.warning(
