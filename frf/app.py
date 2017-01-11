@@ -133,6 +133,21 @@ def init(project_name, settings_file, base_dir, main_module=None):
     cache.init(conf.get(
         'CACHE', {'engine': 'frf.cache.engines.dummy.DummyCacheEngine'}))
 
+    # call module ``init_module`` methods
+    for module_name in conf.get('INSTALLED_MODULES', []):
+        try:
+            module = importlib.import_module(module_name)
+        except ImportError:
+            logger.error(
+                'Could not import module {} which was referenced by '
+                'INSTALLED_MODULES in the application settings.'.format(
+                    module_name))
+            raise
+
+        init_module_func = getattr(module, 'init_module', None)
+        if callable(init_module_func):
+            init_module_func()
+
     api = falcon.API(middleware=middleware)
     api.set_error_serializer(exceptions.error_serializer)
 
