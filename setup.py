@@ -36,14 +36,14 @@ setup(name='frf',
           'tabulate',
           'pytest',
           'python-dateutil',
-          'gunicorn'
+          'gunicorn',
       ],
       extras_require={
           'Docs': ['Sphinx'],
           'Pretty': ['colorama', 'pyfiglet'],
           'Cache': ['redis'],
-          'Testing': ['flake8', 'factory-boy'],
+          'Testing': ['flake8', 'factory-boy', 'mock'],
           },
       scripts=['frf/bin/frf-startproject'],
-      package_data={'frf': ['skel/*']},
+      package_data={'frf': ['frf/skel/*']},
       zip_safe=False)
