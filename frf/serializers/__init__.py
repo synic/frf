@@ -250,7 +250,7 @@ class Serializer(object):
     def save_fields(self, obj, data, cleaned_data, ctx=None):
         for key, value in cleaned_data.items():
             field = self.fields.get(key)
-            if not field.write_only:
+            if not field.read_only:
                 setattr(obj, key, value)
 
     def save(self, obj=None, data=None, ctx=None):
