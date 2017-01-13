@@ -32,7 +32,7 @@ From your main module, you should import app, conf, db, cache and call
 
     from frf import app, conf, db, cache  # noqa
 
-    settingsfile = os.getenv('FRF_SETTINGS_FILE', 'skedup.settings')
+    settingsfile = os.getenv('FRF_SETTINGS_MODULE', 'skedup.settings')
     base_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
 
     app.init('skedup', settingsfile, base_dir)
