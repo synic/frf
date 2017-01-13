@@ -49,10 +49,6 @@ class ValidationError(HTTPError):
             description=message)
 
 
-class TestingError(Exception):
-    pass
-
-
 class DatabaseError(Exception):
     pass
 

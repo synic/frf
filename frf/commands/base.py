@@ -28,7 +28,7 @@ HANDLE_MAP = {
 
 
 class BaseCommand(object):
-    description = 'Description not provided'
+    description = 'description not provided'
 
     def add_arguments(self, parser):
         pass
