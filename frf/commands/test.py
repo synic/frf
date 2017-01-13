@@ -21,7 +21,7 @@ import sys
 
 import pytest
 
-from frf import conf
+from frf import conf, db
 from frf.commands.base import BaseCommand
 
 
@@ -30,9 +30,31 @@ class Command(BaseCommand):
 
     parse_arguments = False
 
+    def setup_database(self):
+        sqlalchemy_test_uri = conf.get('SQLALCHEMY_TEST_CONNECTION_URI')
+
+        if conf.get('SQLALCHEMY_CONNECTION_URI') \
+                and not sqlalchemy_test_uri:
+
+            self.error(
+                'You must set `SQLALCHEMY_TEST_CONNECTION_URI` in your '
+                'settings file.')
+            sys.exit(-1)
+
+        if sqlalchemy_test_uri:
+            self.info('Setting up testing database ... ', end='')
+            db.init(sqlalchemy_test_uri)
+            self.info('Done.')
+
+            self.info('Creating tables ... ', end='')
+            db.drop_all()
+            db.create_all()
+            self.info('Done.')
+
     def handle(self, args):
         conf['TESTING'] = True
 
         sys.argv = sys.argv[1:]
 
+        self.setup_database()
         sys.exit(pytest.main())
