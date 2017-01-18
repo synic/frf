@@ -51,3 +51,6 @@ class BasicAuthentication(object):
 
             except (TypeError, UnicodeDecodeError, binascii.Error):
                 raise
+
+    def __str__(self):
+        return _('Basic')
