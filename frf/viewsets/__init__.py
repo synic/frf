@@ -22,14 +22,18 @@ import json
 
 import falcon
 
-from frf import db, views
+from frf import views
+from frf.viewsets import mixins
 
 
-class ViewSet(views.View):
+class BasicViewSet(views.View):
     """Base ViewSet.
 
-    A minimum usecase must define ``serializer`` and ``get_obj``.
+    A minimum usecase must define ``serializer`` and ``get_obj``, but you'll
+    probably want to define a ``retrieve`` and ``list`` method, or use
+    ``ReadOnlyViewSet``.
     """
+
     allowed_actions = ('list', 'retrieve', 'update', 'create', 'destroy')
     obj_lookup_kwarg = 'uuid'
     parsers = []
@@ -90,14 +94,22 @@ class ViewSet(views.View):
         if method in ('retrieve', 'update', 'destroy'):
             if self.obj_lookup_kwarg not in kwargs:
                 raise falcon.HTTPBadRequest(
-                    title='Lookup ID not found',
-                    description='{} not passed for lookup'.format((
-                        self.obj_lookup_kwarg)))
+                    title=_('Lookup ID not found'),
+                    description=_(
+                        '{obj_lookup_kwarg} not passed for lookup').format(
+                        obj_lookup_kwarg=self.obj_lookup_kwarg))
 
         self.check_permissions(req, **kwargs)
 
         if mapped_method == 'list' and self.obj_lookup_kwarg in kwargs:
             mapped_method = 'retrieve'
+
+        if not hasattr(self, mapped_method):
+            raise falcon.HttpBadReqeust(
+                title=_('Operation not supported'),
+                description=_(
+                    'The operation {operation} is not supported '
+                    'at this endpoint.').format(operation=mapped_method))
 
         getattr(self, mapped_method)(req, resp, **kwargs)
 
@@ -132,8 +144,29 @@ class ViewSet(views.View):
         """
         raise NotImplementedError()
 
+    def get_renderers(self, req, **kwargs):
+        """Return renderers.
+
+        By default, just returns ``self.renderers``.
+        """
+        return self.renderers
+
+    def get_parsers(self, req, **kwargs):
+        """Return response parsers.
+
+        By default, it returns ```self.parsers``.
+        """
+        return self.parsers
+
+    def get_filters(self, req, **kwargs):
+        """Return queryset filters.
+
+        By default, just returns ``self.filters``.
+        """
+        return self.filters
+
     def render(self, method, req, resp, data, **kwargs):
-        for renderer in self.renderers:
+        for renderer in self.get_renderers(req, **kwargs):
             if not renderer.list_only or self.is_list(req, **kwargs):
                 data = renderer.render(req, resp, self, data)
 
@@ -147,6 +180,7 @@ class ViewSet(views.View):
         }
 
     def is_list(self, req, **kwargs):
+        """Return ``True`` if this is a list request."""
         return (
             req.method.lower() == 'get' and self.obj_lookup_kwarg not in kwargs
             )
@@ -154,7 +188,7 @@ class ViewSet(views.View):
     def get_filtered_qs(self, req, **kwargs):
         """Filter the queryset based on the `filters` list."""
         qs = self.get_qs(req, **kwargs)
-        for filter in self.filters:
+        for filter in self.get_filters(req, **kwargs):
             if self.is_list(req, **kwargs) or not filter.list_only:
                 qs = filter.filter(req, qs)
 
@@ -176,6 +210,12 @@ class ViewSet(views.View):
         """
         raise NotImplementedError()
 
+    def get_qs_len(self, req, qs, **kwargs):
+        if isinstance(qs, (list, tuple)):
+            return len(qs)
+        else:
+            return qs.count()
+
     def is_paginated(self, req, **kwargs):
         if isinstance(self.paginate, (list, tuple)) and \
                 len(self.paginate) == 2:
@@ -196,127 +236,35 @@ class ViewSet(views.View):
                 'on the viewset {}'.format(self.__class__.__name__))
         return self.serializer
 
-    def list(self, req, resp, **kwargs):
-        """List instances of this object.
 
-        If ``self.paginate`` is set to a list or tuple of 2 integers, the
-        queryset will be paginated. The first integer in the list is the
-        default page size, and the second is the maximum page size.
-        """
-        qs = self.get_filtered_qs(req, **kwargs)
-        if self.is_paginated(req, **kwargs):
-            qs = self.paginate_qs(req, qs, **kwargs)
-        else:
-            req.context[self.META_CONTEXT_KEY] = {
-                'total': self.get_qs_len(req, qs, **kwargs)}
+class ReadOnlyViewSet(
+        mixins.ListMixin,
+        mixins.RetrieveMixin,
+        BasicViewSet):
+    """A read-only version of :class:`BasicViewSet`.
 
-        resp.body = self.get_serializer(req, **kwargs).serialize(qs, many=True)
-
-    def get_qs_len(self, req, qs, **kwargs):
-        if isinstance(qs, (list, tuple)):
-            return len(qs)
-        else:
-            return qs.count()
-
-    def retrieve(self, req, resp, **kwargs):
-        """Retrieve and return target object."""
-        obj = self.get_obj(req, **kwargs)
-        resp.body = self.get_serializer(req, **kwargs).serialize(obj)
-
-    def update_pre_save(self, req, obj, **kwargs):
-        pass
-
-    def update(self, req, resp, **kwargs):
-        """Update an instance of this object.
-
-        Requires that you have passed ``obj_lookup_kwarg`` in the url for
-        lookup.
-
-        Args:
-            req (falcon.request.Request): The request object
-            resp (falcon.response.Response): The response object
-            commit (bool): Default ``True``.  For model-viewsets, set this to
-                ``False`` if you would like to commit yourself.
-        """
-        obj = self.get_obj(req, **kwargs)
-        data = json.loads(req.stream.read().decode('utf-8'))
-
-        for parser in self.parsers:
-            data = parser.parse(req, self, data)
-
-        req.context['json'] = data
-
-        serializer = self.get_serializer(req, **kwargs)
-        serializer.save(obj=obj, data=data, ctx={'req': req})
-
-        self.update_pre_save(req, obj, **kwargs)
-        self.update_save_obj(req, obj, **kwargs)
-
-        resp.status = falcon.HTTP_204
-
-    def update_save_obj(self, req, obj, **kwargs):
-        raise NotImplementedError()
-
-    def create_pre_save(self, req, obj, **kwargs):
-        pass
-
-    def create(self, req, resp, **kwargs):
-        """Create an instance of this object.
-
-        Called for a POST, it should create and save the object specified in
-        the post body.
-
-        Args:
-            req (falcon.request.Request): The request object
-            resp (falcon.response.Response): The response object
-            commit (bool): Default ``True``. For :class:`ModelViewSet`
-                subclasses, set this to ``False`` if you would like to commit
-                yourself.
-        """
-        data = json.loads(req.stream.read().decode('utf-8'))
-
-        for parser in self.parsers:
-            data = parser.parse(req, self, data)
-
-        req.context['json'] = data
-
-        serializer = self.get_serializer(req, **kwargs)
-        obj = serializer.save(data=data, ctx={'req': req})
-
-        self.create_pre_save(req, obj, **kwargs)
-        self.create_save_obj(req, obj, **kwargs)
-
-        req.context['object'] = obj
-
-        resp.body = serializer.serialize(obj)
-        resp.status = falcon.HTTP_201
-
-    def create_save_obj(self, req, obj, **kwargs):
-        raise NotImplementedError()
-
-    def delete_remove_obj(self, req, obj, **kwargs):
-        raise NotImplementedError()
-
-    def destroy(self, req, resp, **kwargs):
-        """Remove an instance of this object.
-
-        If you wish to change what happens when a delete occurs, override
-        ``delete_remove_obj``.
-
-        Args:
-            req (falcon.request.Request): The request object
-            resp (falcon.response.Response): The response object
-            commit (bool): Default ``True``. For :class:`ModelViewSet`
-                subclasses, set this to ``False`` if you would like to commit
-                yourself.
-        """
-        obj = self.get_obj(req, **kwargs)
-        self.delete_remove_obj(req, obj, **kwargs)
-        resp.status = falcon.HTTP_204
+    Provides the ``list`` and ``retrieve`` operations.
+    """
+    pass
 
 
-class ModelViewSet(ViewSet):
-    """A ViewSet for CRUD on a specific model.
+class ViewSet(
+        mixins.ListMixin,
+        mixins.RetrieveMixin,
+        mixins.CreateMixin,
+        mixins.UpdateMixin,
+        mixins.DestroyMixin,
+        BasicViewSet):
+    """Fully featured ViewSet.
+
+    Provides the ``list``, ``retrieve``, ``create``, ``update``, and
+    ``destroy`` operations.
+    """
+    pass
+
+
+class BasicModelViewSet(BasicViewSet):
+    """A basic model based ViewSet for use on a specific model.
 
     Requires that you define the ``get_qs`` method, that should return the full
     queryset that the current user has access to, for instance, something like
@@ -345,31 +293,6 @@ class ModelViewSet(ViewSet):
             raise ValueError(_('You must specify a model or queryset.'))
 
         return self.model.query
-
-    def update_save_obj(self, req, obj, **kwargs):
-        try:
-            db.session.commit()
-        except:
-            db.session.rollback()
-            raise
-
-    def create_save_obj(self, req, obj, **kwargs):
-        db.session.add(obj)
-
-        try:
-            db.session.commit()
-        except:
-            db.session.rollback()
-            raise
-
-    def delete_remove_obj(self, req, obj, **kwargs):
-        db.session.delete(obj)
-
-        try:
-            db.session.commit()
-        except:
-            db.session.rollback()
-            raise
 
     def paginate_qs(self, req, qs, **kwargs):
         """Paginate the queryset.
@@ -405,3 +328,28 @@ class ModelViewSet(ViewSet):
         meta['total'] = paginator.total
         req.context[self.PAGINATOR_CONTEXT_KEY] = paginator
         return paginator.items
+
+
+class ReadOnlyModelViewSet(
+        mixins.ListMixin,
+        mixins.RetrieveMixin,
+        BasicModelViewSet):
+    """A read-only version of :class:`BasicModelViewSet`.
+
+    Provides the ``list`` and ``retrieve`` operations.
+    """
+    pass
+
+
+class ModelViewSet(mixins.ListMixin,
+                   mixins.RetrieveMixin,
+                   mixins.CreateModelMixin,
+                   mixins.UpdateModelMixin,
+                   mixins.DestroyModelMixin,
+                   BasicModelViewSet):
+    """Fully featured model ViewSet.
+
+    Provides the ``list``, ``retrieve``, ``create``, ``update``, and
+    ``destroy`` operations.
+    """
+    pass

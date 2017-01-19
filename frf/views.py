@@ -17,6 +17,8 @@
 # code under the terms of the Apache License, Version 2.0, as described
 # above.
 
+from gettext import gettext as _
+
 import falcon
 
 
@@ -46,6 +48,20 @@ class View(object):
     authentication = []
     allowed_methods = ('get', 'put', 'patch', 'post', 'delete')
 
+    def get_authentication(self, req, **kwargs):
+        """Get the authentication methods.
+
+        By default, just returns ``self.authentication``.
+        """
+        return self.authentication
+
+    def get_permissions(self, req, **kwargs):
+        """Get permissions.
+
+        By default, just returns ``self.permissions``.
+        """
+        return self.permissions
+
     def authenticate(self, method, req, resp, **kwargs):
         """Loop through authentication methods.
 
@@ -55,16 +71,18 @@ class View(object):
         """
         # authentication
         user = None
-        if self.authentication:
-            for auth_method in self.authentication:
+        auth_methods = self.get_authentication(req, **kwargs)
+
+        if auth_methods:
+            for auth_method in auth_methods:
                 user = auth_method.authenticate(req, self)
                 if user:
                     break
             if not user:
                 raise falcon.HTTPUnauthorized(
-                    title='Not Authorized',
-                    description='Not Authorized',
-                    challenges='Token')
+                    title=_('Not Authorized'),
+                    description=_('Not Authorized'),
+                    challenges=[str(m) for m in auth_methods])
             else:
                 req.context['user'] = user
         else:
@@ -79,14 +97,22 @@ class View(object):
         rest will be ignored.  If none fail, the request will be allowed to
         continue.
         """
-        #: permissions
-        if self.permissions:
-            for permission in self.permissions:
+        permissions = self.get_permissions(req, **kwargs)
+        if permissions:
+            for permission in permissions:
                 if not permission.has_permission(req, self, **kwargs):
                     raise falcon.HTTPForbidden(
-                        title='Forbidden',
-                        description='You do not have permission to access '
-                        'this resource.')
+                        title=_('Forbidden'),
+                        description=_(
+                            'You do not have permission to access '
+                            'this resource.'))
+
+    def get_allowed_methods(self, req, **kwargs):
+        """Return the allowed methods.
+
+        Returns ``self.allowed_methods`` by default.
+        """
+        return self.allowed_methods
 
     def dispatch(self, method, req, resp, **kwargs):
         """Route the request to the appropriate method.
@@ -98,7 +124,7 @@ class View(object):
             method (str): The HTTP method, can be one of ``get``, ``put``,
                 ``patch``, ``post``, ``delete``.
         """
-        if method not in self.allowed_methods:
+        if method not in self.get_allowed_methods(req, **kwargs):
             raise falcon.HTTPMethodNotAllowed(
                 allowed_methods=self.allowed_methods())
 

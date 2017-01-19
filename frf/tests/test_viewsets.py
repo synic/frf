@@ -97,7 +97,7 @@ class DummyViewSet(viewsets.ViewSet):
     def update_save_obj(self, req, obj, **kwargs):
         pass
 
-    def delete_remove_obj(self, req, obj, **kwargs):
+    def destroy_remove_obj(self, req, obj, **kwargs):
         to_delete = []
 
         for item in ITEMS:
