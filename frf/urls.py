@@ -22,69 +22,70 @@ import logging
 
 logger = logging.getLogger(__name__)
 
-ROUTE_REGISTRY = []
+URL_REGISTRY = []
 
 
-class IncludeRoutes(list):
-    def get_routelist(self, base_url):
-        """Return the routes, each prepended with ``base_url``."""
-        routes = []
-        for route in self:
-            if isinstance(route, (tuple, list)):
-                if not isinstance(route, IncludeRoutes):
-                    url = route[0]
+class IncludeURLs(list):
+    def get_list(self, base_url):
+        """Return the urls, each prepended with ``base_url``."""
+        urls = []
+        for pattern in self:
+            if isinstance(pattern, (tuple, list)):
+                if not isinstance(pattern, IncludeURLs):
+                    url = pattern[0]
 
                     # here we are going to try and avoid two ``//`` in a row.
                     if base_url.endswith('/') and url.startswith('/'):
                         url = url[1:]
 
-                    routes.append(
-                        ('{}{}'.format(base_url, url), route[1]))
+                    urls.append(
+                        ('{}{}'.format(base_url, url), pattern[1]))
                 else:
-                    routes.append(route)
+                    urls.append(pattern)
 
-        return routes
+        return urls
 
 
 class IncludeError(Exception):
     pass
 
 
-def include(module, route_name='routes'):
-    """Include routes from a separate file.
+def include(module, urlpatterns_name='urlpatterns'):
+    """Include url patterns from a separate file.
 
     Usage:
 
     .. code-block:: python
-       :caption: routes.py
+       :caption: urls.py
 
-       from frf.routes import include
+       from frf.urls import include
        from myproject import views
 
 
-       routes = [
+       urlpatterns = [
           ('/index', views.some_view),
-          include('calendars.routes'),
+          include('calendars.urls'),
        ]
 
     Args:
-        module (str or object): The absolute path to the routes. Can also be
-            the routes themselves.
-        route_name (str): The name of the routes variable inside ``module``.
-           ``routes`` will be used if this is not specified.
+        module (str or object): The absolute path to the module. Can also be
+            a list of urls.
+        urlpatterns_name (str): The name of the url patterns variable inside
+           ``module``. ``urlpatterns`` will be used if this is not specified.
     """
     if isinstance(module, str):
         try:
             module = importlib.import_module(module)
-            routes_attr = getattr(module, route_name, None)
-            if not routes_attr:
+            urlpatterns_attr = getattr(module, urlpatterns_name, None)
+            if not urlpatterns_attr:
                 logger.warning(
-                    'Could not obtain routes from route module {}'.format(
+                    'Could not obtain urls paterns from url module {}'.format(
                         module))
-            return IncludeRoutes(routes_attr)
+                return []
+            return IncludeURLs(urlpatterns_attr)
         except ImportError:
             logger.warning(
-                'Could not load routes from module {}'.format(module))
+                'Could not load url module {}'.format(module))
             raise IncludeError()
     else:
-        return IncludeRoutes(module)
+        return IncludeURLs(module)

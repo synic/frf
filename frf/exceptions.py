@@ -23,8 +23,6 @@ import logging
 import traceback
 
 import falcon
-
-
 from falcon.errors import (  # noqa
     HTTPError, HTTPForbidden, HTTPNotAcceptable, HTTPNotFound, HTTPConflict,
     HTTPLengthRequired, HTTPPreconditionFailed, HTTPRequestEntityTooLarge,
@@ -37,8 +35,19 @@ from falcon.errors import (  # noqa
 
 from frf import conf
 
-
 logger = logging.getLogger(__name__)
+
+
+class DatabaseError(Exception):
+    pass
+
+
+class IncludeError(Exception):
+    pass
+
+
+class InitializationError(Exception):
+    pass
 
 
 class ValidationError(HTTPError):
@@ -47,14 +56,6 @@ class ValidationError(HTTPError):
             status=falcon.HTTP_422,
             title=_('Validation Error'),
             description=message)
-
-
-class DatabaseError(Exception):
-    pass
-
-
-class InitializationError(Exception):
-    pass
 
 
 class InvalidFieldException(Exception):

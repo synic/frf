@@ -62,7 +62,7 @@ def create_project_skeleton(output_dir, project_name):
     copy_skel('manage_py', manage_file, project_name=name)
     st = os.stat(manage_file)
     os.chmod(manage_file, st.st_mode | stat.S_IEXEC)
-    copy_skel('routes_py', os.path.join(main_dir, 'routes.py'))
+    copy_skel('urls_py', os.path.join(main_dir, 'urls.py'))
     print('Done.\n')
     print(col.green(
         'Congratulations, your project "{}" has been set up'

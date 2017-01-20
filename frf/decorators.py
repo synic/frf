@@ -88,11 +88,11 @@ def simpleview(methods=('get', ), **kwargs):
                 raise
 
     .. code-block:: python
-       :caption: routes.py
+       :caption: urls.py
 
        from myproject.views import delete_user
 
-       routes = [
+       urlpatterns = [
            ('/delete_user/{uuid}/', delete_user),
        ]
     """
