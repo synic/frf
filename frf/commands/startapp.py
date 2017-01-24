@@ -60,11 +60,11 @@ class Command(BaseCommand):
 
         touch(os.path.join(output_dir, '__init__.py'))
 
-        for skel_file in ('models_py', 'routes_py', 'serializers_py',
+        for skel_file in ('models_py', 'urls_py', 'serializers_py',
                           'tests_py', 'viewsets_py'):
             copy_skel(
                 skel_file,
                 os.path.join(output_dir, skel_file.replace('_py', '.py')),
                 project_name=conf.PROJECT_NAME, app_name=args.name)
 
-        print('Done!')
+        self.info('Done!')

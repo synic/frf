@@ -57,7 +57,7 @@ import logging.config
 import falcon
 
 from frf import exceptions
-from frf.routes import IncludeRoutes, ROUTE_REGISTRY
+from frf.urls import IncludeURLs, URL_REGISTRY
 from frf.utils.importing import import_class
 
 from . import cache, conf, db
@@ -67,26 +67,26 @@ logger = logging.getLogger(__name__)
 api = None
 
 
-def _flatten_routes(route_list, routes):
-    for route in route_list:
-        if isinstance(route, IncludeRoutes):
-            _flatten_routes(route, routes)
-        elif isinstance(route[1], IncludeRoutes):
-            _flatten_routes(route[1].get_routelist(
-                base_url=route[0]), routes)
+def _flatten_urls(url_list, urls):
+    for url in url_list:
+        if isinstance(url, IncludeURLs):
+            _flatten_urls(url, urls)
+        elif isinstance(url[1], IncludeURLs):
+            _flatten_urls(url[1].get_list(
+                base_url=url[0]), urls)
         else:
-            routes.append(route)
+            urls.append(url)
 
 
-def _add_routes(app, route_list):
-    routes = []
-    _flatten_routes(route_list, routes)
+def _add_urls(app, url_list):
+    urls = []
+    _flatten_urls(url_list, urls)
 
-    routes += ROUTE_REGISTRY
+    urls += URL_REGISTRY
 
-    for route in routes:
-        if route:
-            app.add_route(route[0], route[1])
+    for url in urls:
+        if url:
+            app.add_route(url[0], url[1])
 
 
 def init(project_name, settings_file, base_dir, main_app=None):
@@ -151,19 +151,19 @@ def init(project_name, settings_file, base_dir, main_app=None):
     api = falcon.API(middleware=middleware)
     api.set_error_serializer(exceptions.error_serializer)
 
-    route_module_name = '{}.routes'.format(main_app)
+    url_module_name = '{}.urls'.format(main_app)
     try:
-        route_module = importlib.import_module(route_module_name)
-        app_routes = getattr(route_module, 'routes', None)
-        if app_routes:
-            _add_routes(api, app_routes)
+        url_module = importlib.import_module(url_module_name)
+        app_patterns = getattr(url_module, 'urlpatterns', None)
+        if app_patterns:
+            _add_urls(api, app_patterns)
         else:
-            if app_routes is None:
+            if app_patterns is None:
                 logger.warning(
-                    'Could not find routes in base route module: {}'.format(
-                        route_module_name))
+                    'Could not find urlpatterns in base url module: {}'.format(
+                        url_module_name))
     except ImportError as e:
         logger.warning(
-            'Base route module {} could not be imported.'.format(
-                route_module_name))
+            'Base url module {} could not be imported.'.format(
+                url_module_name))
         logger.error(e)

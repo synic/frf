@@ -32,8 +32,10 @@ class CommandArgumentParser(argparse.ArgumentParser):
         return ' '.join(words)
 
     def error(self, message):
-        print(self.format_usage())
-        print('\n{}'.format(message))
+        sys.stdout.writelines([
+            self.format_usage(),
+            '\n\n{}'.format(message),
+            ])
         sys.exit(-1)
 
 
@@ -82,8 +84,8 @@ def main():
         text = conf.get('PROJECT_NAME', 'frf') + '\n'
 
     col = colors.ColorText()
-    print(col.lightmagenta(text).value(), end='')  # noqa
-    print('~' * 70)
+    sys.stdout.writelines([
+        col.lightmagenta(text).value(), '~' * 70, '\n'])
 
     argv = sys.argv[:]
     args, _ = globalparser.parse_known_args()
@@ -91,7 +93,9 @@ def main():
 
     if args.command:
         if args.command not in commands:
-            print('Command not found: {}\n'.format(args.command))
+            sys.stderr.writelines([
+                'Command not found: {}\n\n'.format(args.command),
+                '\n'])
             sys.exit(-1)
 
         argv = argv[2:]
@@ -107,8 +111,10 @@ def main():
 
         command.handle(args)
     else:
-        print('usage: manage.py [command] [options]...\n')
-        print('The following commands are available:\n')
+        sys.stdout.writelines([
+            'usage: manage.py [command] [options]...\n\n',
+            'The following commands are available:\n\n',
+            ])
         table = []
 
         keys = list(commands.keys())
@@ -121,4 +127,5 @@ def main():
                 col.reset('- ').reset(getattr(
                     cls, 'description', 'no description provided')).value()))
 
-        print(tabulate.tabulate(table, tablefmt='plain'))
+        sys.stdout.writelines([
+            tabulate.tabulate(table, tablefmt='plain'), '\n'])

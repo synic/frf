@@ -107,21 +107,21 @@ Let's add our ``PASSWORDS`` setting to the settings file.  Open up
         'adam': 'onetwo34',
     }
 
-Update Routes
+Update URLS
 --------------
 
 Now we just need to tell the system about our new setting, so open up
-``blog/routes.py`` and add the new api to ``routes``:
+``blog/urls.py`` and add the new api to ``urlpatterns``:
 
 .. code-block:: python
-   :caption: routes.py
+   :caption: urls.py
 
     from blog import viewsets
 
     article_viewset = viewsets.ArticleViewSet()
     admin_article_viewset = viewsets.AdminArticleViewSet()
 
-    routes = [
+    urlpatterns = [
         ('/blog/articles/', article_viewset),
         ('/blog/articles/{uuid}/', article_viewset),
         ('/admin/blog/articles/', admin_article_viewset),

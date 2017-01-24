@@ -21,7 +21,7 @@ This will create a directory structure like the following:
    |   |-- __init__.py
    |   |-- models.py
    |   |-- tests.py
-   |   |-- routes.py
+   |   |-- urls.py
    |   |-- serializers.py
    |   +-- viewsets.py
    +-- blogapi
@@ -116,34 +116,34 @@ and edit it to look like this:
             return models.Article.query.order_by(
                 models.Article.post_date.desc())
 
-Add a Route
+Add a URL Route
 -----------
 
 We need to tell FRF how to map what url to this new ViewSet.  Open
-``blog/routes.py`` and edit it to look like this:
+``blog/urls.py`` and edit it to look like this:
 
 .. code-block:: python
-   :caption: routes.py
+   :caption: urls.py
 
     from blog import viewsets
 
     article_viewset = viewsets.ArticleViewSet()
 
-    routes = [
+    urlpatterns = [
         ('/blog/articles/', article_viewset),
         ('/blog/articles/{uuid}/', article_viewset),
         ]
 
-Now we need to tell our app to use the blog routes.  Open ``blogapi/routes.py``
-and edit it to look like this:
+Now we need to tell our app to use the blog url routes. Open
+``blogapi/urls.py`` and edit it to look like this:
 
 .. code-block:: python
-   :caption: routes.py
+   :caption: urls.py
 
-    from frf.routes import include, route  # noqa
+    from frf.urls import include, route  # noqa
 
-    routes = [
-      ('/api/', include('blog.routes')),
+    urlpatterns = [
+        ('/api/', include('blog.urls')),
     ]
 
 
