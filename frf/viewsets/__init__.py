@@ -41,6 +41,7 @@ class BasicViewSet(views.View):
     resource_name = 'result'
     resource_name_plural = 'results'
     serializer = None
+    write_serializer = None
     filters = []
 
     paginate = None
@@ -223,7 +224,7 @@ class BasicViewSet(views.View):
         return False
 
     def get_serializer(self, req, **kwargs):
-        """Return the serializer for this ``ViewSet``.
+        """Return the read serializer for this ``ViewSet``.
 
         In most circumstances, that will just be ``self.serializer``.  However,
         you can override this method and return a serializer that is determined
@@ -235,6 +236,21 @@ class BasicViewSet(views.View):
                 description='You must define a serializer '
                 'on the viewset {}'.format(self.__class__.__name__))
         return self.serializer
+
+    def get_write_serializer(self, req, **kwargs):
+        """Return the write serializer.
+
+        Will return ``self.write_serializer``, or, if that is ``None``, it will
+        return ``self.get_serializer()``.
+
+        Override if you need to use some custom logic to determine which
+        serializer to use for writing.
+        """
+        serializer = self.write_serializer
+        if not serializer:
+            serializer = self.get_serializer(req, **kwargs)
+
+        return serializer
 
 
 class ReadOnlyViewSet(

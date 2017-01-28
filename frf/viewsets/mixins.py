@@ -79,7 +79,8 @@ class CreateMixin(object):
 
         req.context['json'] = data
 
-        serializer = self.get_serializer(req, **kwargs)
+        # obtain the write serializer
+        serializer = self.get_write_serializer(req, **kwargs)
         obj = serializer.save(data=data, ctx={'req': req})
 
         self.create_pre_save(req, obj, **kwargs)
@@ -87,6 +88,8 @@ class CreateMixin(object):
 
         req.context['object'] = obj
 
+        # obtain the read serializer
+        serializer = self.get_serializer(req, **kwargs)
         resp.body = serializer.serialize(obj)
         resp.status = falcon.HTTP_201
 
@@ -123,7 +126,7 @@ class UpdateMixin(object):
 
         req.context['json'] = data
 
-        serializer = self.get_serializer(req, **kwargs)
+        serializer = self.get_write_serializer(req, **kwargs)
         serializer.save(obj=obj, data=data, ctx={'req': req})
 
         self.update_pre_save(req, obj, **kwargs)
