@@ -53,3 +53,5 @@ A similar viewset in frf would look like this:
 
        def update(self, req, resp, **kwargs):
            # ... update
+
+`Click here to read the documentation! <http://falcon-rest-framework.readthedocs.io/en/latest/>`_
