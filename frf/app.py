@@ -127,7 +127,8 @@ def init(project_name, settings_file, base_dir, main_app=None):
         db.init(
             conf.get('SQLALCHEMY_CONNECTION_URI', 'sqlite:///:memory:'),
             echo=conf.get('SQLALCHEMY_ECHO', False),
-            use_greenlet_scope=conf.get('USING_GREENLET', False))
+            scopefunc=conf.get('SQLALCHEMY_SESSION_SCOPEFUNC', None),
+            )
 
     # set up the cache
     cache.init(conf.get(
