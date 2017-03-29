@@ -61,13 +61,8 @@ import contextlib
 import importlib
 import inspect
 
-try:
-    from factory.alchemy import SQLAlchemyModelFactory
-except ImportError:
-    SQLAlchemyModelFactory = None
-
-from sqlalchemy import create_engine
-from sqlalchemy.orm import scoped_session, sessionmaker
+from sqlalchemy import create_engine, orm
+from sqlalchemy.util import ScopedRegistry, ThreadLocalRegistry
 
 from frf import conf, models
 from frf.exceptions import DatabaseError
@@ -76,8 +71,7 @@ from frf.utils.json import deserialize, serialize
 
 
 engine = None
-_session_maker = None
-session = None
+session = orm.scoped_session(orm.sessionmaker())
 
 
 def get_engine():
@@ -85,41 +79,22 @@ def get_engine():
     return engine
 
 
-def init(connection_uri, echo=False, use_greenlet_scope=False):
+def init(connection_uri, echo=False, scopefunc=None):
     """Initialize the session.
 
     Args:
         connection_uri (str): The connection uri, such as
             "postgrseql://user:password@localhost/dbname"
         echo (bool): Echo SQL statements to stdout.  Useful for debugging.
-        use_greenlet_scope (bool): Set to `True` if you are using
-            greenlets so that the session gets scoped to the correct
-            identity function
+        scopefunc (func): Optional function which defines
+            the current scope.  See
+            http://docs.sqlalchemy.org/en/latest/orm/contextual.html#sqlalchemy.orm.scoping.scoped_session.__init__
+            for more information.  If this is not passed, the "thread-local"
+            scope will be assumed.
     """
-    global engine, _session_maker, session
+    global engine, session
 
     from frf.models import Model
-
-    if use_greenlet_scope:
-        # attempt to use `greenlet.get_current` as the sqlalchemy session
-        # scope
-        try:
-            from greenlet import get_current as get_ident
-        except ImportError:
-            raise DatabaseError(
-                'You have specified `use_greenlet_scope` in your database '
-                'configuration, but greenlet could not be imported.')
-    else:
-        # use local thread for sqlalchemy session scope
-        try:
-            from thread import get_ident
-        except ImportError:
-            try:
-                from _thread import get_ident
-            except ImportError:
-                # no `get_ident` could be found, just use `None`.  This
-                # will create the default thread local session.
-                get_ident = None
 
     if 'postgres' in connection_uri:
         engine = create_engine(
@@ -131,10 +106,14 @@ def init(connection_uri, echo=False, use_greenlet_scope=False):
         engine = create_engine(
             connection_uri,
             echo=echo)
-    _session_maker = sessionmaker(bind=engine)
-    session = scoped_session(
-        _session_maker, scopefunc=get_ident)
 
+    if scopefunc is not None:
+        session.registry = ScopedRegistry(
+            session.session_factory, scopefunc=scopefunc)
+    else:
+        session.registry = ThreadLocalRegistry(session.session_factory)
+
+    session.configure(bind=engine)
     Model.query = _QueryProperty(session)
 
 
@@ -152,20 +131,6 @@ def create_all():
             importlib.import_module('{}.models'.format(app_name))
         except ImportError:
             pass
-
-        # fix all factories
-        if SQLAlchemyModelFactory:
-            try:
-                module = importlib.import_module('{}.tests.factories'.format(
-                    app_name))
-                for attr_name in dir(module):
-                    attr = getattr(module, attr_name)
-                    if inspect.isclass(attr) and issubclass(
-                            attr, SQLAlchemyModelFactory):
-                        attr._meta.sqlalchemy_session = session
-
-            except ImportError:
-                pass
 
     models.Model.metadata.create_all(engine)
 
