@@ -60,7 +60,7 @@ from frf import exceptions
 from frf.urls import IncludeURLs, URL_REGISTRY
 from frf.utils.importing import import_class
 
-from . import cache, conf, db
+from . import cache, conf
 
 logger = logging.getLogger(__name__)
 
@@ -121,14 +121,6 @@ def init(project_name, settings_file, base_dir, main_app=None):
     for cls_name in middleware_classes:
         cls = import_class(cls_name)
         middleware.append(cls())
-
-    # set up the database
-    if conf.get('SQLALCHEMY_CONNECTION_URI'):
-        db.init(
-            conf.get('SQLALCHEMY_CONNECTION_URI', 'sqlite:///:memory:'),
-            echo=conf.get('SQLALCHEMY_ECHO', False),
-            scopefunc=conf.get('SQLALCHEMY_SESSION_SCOPEFUNC', None),
-            )
 
     # set up the cache
     cache.init(conf.get(

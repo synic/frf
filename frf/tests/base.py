@@ -17,23 +17,41 @@
 # code under the terms of the Apache License, Version 2.0, as described
 # above.
 
+from frf import conf
 from falcon.testing import TestCase
-
-from frf import conf, db
+from sqlalchemy import event
 
 
 class BaseTestCase(TestCase):
+    database = None  # frf database object
+
     def setUp(self):
-        self.sqlalchemy_test_uri = conf.get('SQLALCHEMY_TEST_CONNECTION_URI')
-
-        if self.sqlalchemy_test_uri:
-            # set up the test database tables
-            db.create_all()
-
         super().setUp()
+        # start an sqlalchemy transaction to encompass the test case, so that
+        # we can roll it back after the test is complete to get a fresh
+        # database.
+        if self.database:
+            if conf.TESTING:
+                self.database.create_all()
+
+            self.session = self.database.session
+            self.connection = self.database.engine.connect()
+            self.trans = self.connection.begin()
+            self.session.remove()
+            self.session.configure(bind=self.connection)
+            self.session.begin_nested()
+
+            @event.listens_for(self.session, 'after_transaction_end')
+            def restart_savepoint(session, t):
+                if t.nested and not t._parent.nested:
+                    session.expire_all()
+                    session.begin_nested()
 
     def tearDown(self):
-        super().tearDown()
+        self.trans.rollback()
+        self.session.close()
+        self.connection.close()
 
-        if self.sqlalchemy_test_uri:
-            db.truncate_all()
+        if conf.TESTING:
+            self.database.drop_all()
+        super().tearDown()

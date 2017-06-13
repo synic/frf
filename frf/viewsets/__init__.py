@@ -293,6 +293,7 @@ class BasicModelViewSet(BasicViewSet):
                 company_uuid=req.context['user'].company_uuid)
     """
     model = None
+    session = None
 
     def get_obj(self, req, **kwargs):
         if 'object' in req.context:
@@ -308,7 +309,7 @@ class BasicModelViewSet(BasicViewSet):
         if not self.model:
             raise ValueError(_('You must specify a model or queryset.'))
 
-        return self.model.query
+        return self.session.query(self.model)
 
     def paginate_qs(self, req, qs, **kwargs):
         """Paginate the queryset.

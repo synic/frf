@@ -21,8 +21,6 @@ import json
 
 import falcon
 
-from frf import db
-
 
 class ListMixin(object):
     """List a queryset."""
@@ -163,12 +161,12 @@ class CreateModelMixin(CreateMixin):
     """Create a model instance."""
 
     def create_save_obj(self, req, obj, **kwargs):
-        db.session.add(obj)
+        self.session.add(obj)
 
         try:
-            db.session.commit()
+            self.session.commit()
         except:
-            db.session.rollback()
+            self.session.rollback()
             raise
 
 
@@ -177,9 +175,9 @@ class UpdateModelMixin(UpdateMixin):
 
     def update_save_obj(self, req, obj, **kwargs):
         try:
-            db.session.commit()
+            self.session.commit()
         except:
-            db.session.rollback()
+            self.session.rollback()
             raise
 
 
@@ -187,10 +185,10 @@ class DestroyModelMixin(DestroyMixin):
     """Delete/Remove a model instance."""
 
     def destroy_remove_obj(self, req, obj, **kwargs):
-        db.session.delete(obj)
+        self.session.delete(obj)
 
         try:
-            db.session.commit()
+            self.session.commit()
         except:
-            db.session.rollback()
+            self.session.rollback()
             raise

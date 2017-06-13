@@ -23,9 +23,12 @@ import falcon
 
 from frf.tests import fakeproject
 from frf.tests.base import BaseTestCase
+from frf.tests.fakeproject import db
 
 
 class FakeProjectTestCase(BaseTestCase):
+    database = db.database
+
     def setUp(self):
         super().setUp()
 

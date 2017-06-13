@@ -28,7 +28,7 @@ CONVERSION_MAP = {
 }
 
 
-class EnderJSONEncoder(json.JSONEncoder):
+class JSONEncoder(json.JSONEncoder):
     def default(self, obj):
         for type_, converter in CONVERSION_MAP.items():
             if isinstance(obj, type_):
@@ -37,9 +37,9 @@ class EnderJSONEncoder(json.JSONEncoder):
         return super().default(obj)
 
 
-class EnderJSONDecoder(json.JSONDecoder):
+class JSONDecoder(json.JSONDecoder):
     pass
 
 
-serialize = functools.partial(json.dumps, cls=EnderJSONEncoder)
-deserialize = functools.partial(json.loads, cls=EnderJSONDecoder)
+serialize = functools.partial(json.dumps, cls=JSONEncoder)
+deserialize = functools.partial(json.loads, cls=JSONDecoder)

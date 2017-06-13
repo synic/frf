@@ -21,8 +21,9 @@ import uuid
 
 from falcon.testing import TestCase as BaseTestCase
 
-from frf import db, models, serializers
+from frf import models, serializers
 from frf.models import mixins
+from frf.tests.fakeproject import db
 
 
 class User(mixins.TimestampMixin, models.Model):
@@ -56,11 +57,12 @@ class UserSerializer2(serializers.ModelSerializer):
 
 
 class TestCase(BaseTestCase):
+    database = db.database
+
     def setUp(self):
         super().setUp()
 
-        db.init('sqlite://', echo=False)
-        User.metadata.create_all(db.engine)
+        User.metadata.create_all(db.database.engine)
 
     def test_auto_fields(self):
         serializer = UserSerializer()

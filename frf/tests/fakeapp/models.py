@@ -21,15 +21,19 @@ import uuid
 
 from frf import models
 
+from frf.tests.fakeproject import db
 
-class Company(models.Model):
+BaseModel = db.database.create_base_model('BaseModel')
+
+
+class Company(BaseModel):
     id = models.Column(models.Integer, primary_key=True)
     name = models.Column(models.String)
 
     __tablename__ = 'company'
 
 
-class Author(models.Model):
+class Author(BaseModel):
     uuid1 = models.Column(models.GUID, default=uuid.uuid4, primary_key=True)
     uuid2 = models.Column(models.GUID, default=uuid.uuid4, primary_key=True)
     name = models.Column(models.String)
@@ -43,7 +47,7 @@ class Author(models.Model):
     __tablename__ = 'author'
 
 
-class Book(models.Model):
+class Book(BaseModel):
     id = models.Column(models.Integer, primary_key=True)
     title = models.Column(models.String)
     author_uuid1 = models.Column(

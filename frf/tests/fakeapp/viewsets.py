@@ -19,17 +19,20 @@
 
 from frf import permissions, views, viewsets
 from frf.tests.fakeapp import models, serializers
+from frf.tests.fakeproject import db
 
 
 class CompanyViewSet(viewsets.ModelViewSet):
     obj_lookup_kwarg = 'id'
     model = models.Company
+    session = db.session
     serializer = serializers.CompanySerializer()
 
 
 class AuthorViewSet(viewsets.ModelViewSet):
     model = models.Author
     serializer = serializers.AuthorSerializer()
+    session = db.session
     obj_lookup_kwarg = 'uuid1'
 
     def get_obj_lookup_kwargs(self, req, **kwargs):
@@ -41,6 +44,7 @@ class AuthorViewSet(viewsets.ModelViewSet):
 
 class BookViewSet(viewsets.ModelViewSet):
     model = models.Book
+    session = db.session
     serializer = serializers.BookSerialzier()
 
 

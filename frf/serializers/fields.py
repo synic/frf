@@ -639,13 +639,13 @@ class PrimaryKeyRelatedField(Field):
        :caption: serializers.py
 
        from frf import serializers
-       from myproject import models
+       from myproject import db, models
 
 
        class AuthorSerializer(frf.ModelSerializer):
            name = serializers.StringField()
            books = serializers.PrimaryKeyRelatedField(
-               model=models.Book, many=True)
+               session=db.session, model=models.Book, many=True)
 
     Will produce output something like this:
 
@@ -660,33 +660,23 @@ class PrimaryKeyRelatedField(Field):
                       '"key2": "value2"}}'),
     }
 
-    def __init__(self, model, queryset=None, many=False, *args, **kwargs):
+    def __init__(self, session, model, many=False, *args, **kwargs):
         """
         Args:
+            session: SQLAlchemy session
             model (frf.serializers.model.Model): The related model.
-            queryset (sqlalchemy.orm.Query): The query.  If not specified,
-                ``model.query.filter()`` will be used.
             many (boolean): Set to true if this relationship is a many-to-one
                 or many-to-many relationship.
         """
         self.model = model
         self.many = many
-        self._queryset = queryset
+        self.session = session
 
         super().__init__(*args, **kwargs)
 
     @property
     def queryset(self):
-        if not hasattr(self.model, 'query'):
-            raise exceptions.InitializationError(
-                'Error initializing field {}, '
-                'Invalid model {} or database is not initialized.'.format(
-                    self.__class__.__name__,
-                    self.model))
-
-        if not self._queryset:
-            return self.model.query.filter()
-        return self._queryset
+        return self.session.query(self.model)
 
     def get_primary_keys(self):
         mapper = self.model.__mapper__

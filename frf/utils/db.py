@@ -23,7 +23,6 @@ from math import ceil
 import falcon
 
 from sqlalchemy import orm
-from sqlalchemy.orm.exc import UnmappedClassError
 from sqlalchemy.sql import func
 
 
@@ -183,18 +182,3 @@ class BaseQuery(orm.Query):
             total = self.order_by(None).count()
 
         return Pagination(self, page, per_page, total, items)
-
-
-class _QueryProperty(object):
-    def __init__(self, session):
-        self.session = session
-
-    def __get__(self, obj, type):
-        try:
-            mapper = orm.class_mapper(type)
-            count_column = getattr(type, 'uuid', None)
-            if mapper:
-                return type.query_class(mapper, session=self.session(),
-                                        count_column=count_column)
-        except UnmappedClassError:
-            return None

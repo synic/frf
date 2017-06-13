@@ -23,10 +23,11 @@ import uuid
 
 import falcon
 
-from frf import db, exceptions, serializers
+from frf import exceptions, serializers
 from frf.tests.base import BaseTestCase
 from frf.tests import fakeproject  # noqa
 from frf.tests.fakeapp import models
+from frf.tests.fakeproject import db
 from frf.utils import timezone
 from frf.utils.json import serialize
 
@@ -388,23 +389,19 @@ class TestCase(unittest.TestCase):
             'does not appear to be an integer',
             context.exception.description['name'][0])
 
-    def test_fail_invalid_field_needs_model_serializer(self):
-        with self.assertRaises(serializers.InvalidFieldException):
-            new_serializer_class(
-                field=serializers.PrimaryKeyRelatedField(
-                    model=FakeModel()),)
-
 
 class FakeProjectTestCase(BaseTestCase):
+    database = db.database
+
     def setUp(self):
         super().setUp()
-        models.Author.metadata.create_all(db.engine)
-        models.Book.metadata.create_all(db.engine)
-        models.Company.metadata.create_all(db.engine)
+        models.Author.metadata.create_all(db.database.engine)
+        models.Book.metadata.create_all(db.database.engine)
+        models.Company.metadata.create_all(db.database.engine)
 
-        models.Company.query.delete()
-        models.Author.query.delete()
-        models.Book.query.delete()
+        db.session.query(models.Company).delete()
+        db.session.query(models.Author).delete()
+        db.session.query(models.Book).delete()
 
         self.api = fakeproject.app.api
 

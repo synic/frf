@@ -25,9 +25,11 @@ import falcon
 
 from falcon.testing import TestCase as BaseTestCase
 
-from frf import db, models
+from frf import models
 from frf import exceptions, filters, renderers, serializers, viewsets
+from frf.tests.fakeapp.models import BaseModel
 from frf.tests.fake import faker
+from frf.tests.fakeproject import db
 
 
 class User(object):
@@ -54,7 +56,7 @@ def awesome_flag_present(req=None, qs=None, is_awesome=False, **kwargs):
     return new_qs
 
 
-class Dummy(models.Model):
+class Dummy(BaseModel):
     uuid = models.Column(models.GUID, default=uuid.uuid4, primary_key=True)
     name = models.Column(models.String(255))
     email = models.Column(models.String(255), index=True)
@@ -101,11 +103,10 @@ class DummyViewSet(viewsets.ModelViewSet):
 
 
 class TestCase(BaseTestCase):
+    database = db
+
     def setUp(self):
         super().setUp()
-        db.init('sqlite://', echo=False)
-        Dummy.metadata.create_all(db.engine)
-
         self.api = falcon.API()
         self.viewset = DummyViewSet()
         self.api.add_route('/dummies/', self.viewset)

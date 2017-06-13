@@ -20,11 +20,12 @@
 from frf import serializers
 
 from frf.tests.fakeapp import models
+from frf.tests.fakeproject import db
 
 
 class CompanySerializer(serializers.ModelSerializer):
     authors = serializers.PrimaryKeyRelatedField(
-        model=models.Author, many=True)
+        session=db.session, model=models.Author, many=True)
 
     class Meta:
         model = models.Company
@@ -33,9 +34,9 @@ class CompanySerializer(serializers.ModelSerializer):
 
 class AuthorSerializer(serializers.ModelSerializer):
     company = serializers.PrimaryKeyRelatedField(
-        model=models.Company)
+        session=db.session, model=models.Company)
     books = serializers.PrimaryKeyRelatedField(
-        model=models.Book, many=True)
+        session=db.session, model=models.Book, many=True)
 
     class Meta:
         fields = ('uuid1', 'uuid2', 'name', 'company', 'books')
@@ -44,7 +45,7 @@ class AuthorSerializer(serializers.ModelSerializer):
 
 class BookSerialzier(serializers.ModelSerializer):
     author = serializers.PrimaryKeyRelatedField(
-        model=models.Author)
+        session=db.session, model=models.Author)
 
     class Meta:
         fields = ('id', 'title', 'author')
